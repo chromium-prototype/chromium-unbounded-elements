@@ -3,9 +3,11 @@
 ## Milestone 1: DOM & Layout Isolation (The "Hole Punch")
 
 ### DOM & Layout Object Creation
-- [ ] **Define the HTML Element**: 
-  - [ ] Add the `<panel>` tag to `third_party/blink/renderer/core/html/html_tag_names.json5`.
-  - [ ] Implement `HTMLPanelElement` C++ class (inheriting from `HTMLElement`).
+- [x] **Define the HTML Element**: 
+  - [x] Add the `<panel>` tag to `third_party/blink/renderer/core/html/html_tag_names.json5`.
+  - [x] Implement `HTMLPanelElement` C++ class (inheriting from `HTMLElement`).
+  - [x] Create `html_panel_element.idl` to expose the constructor to JS.
+  - [x] Register the new C++ and IDL files in the build system (`html/build.gni`, `bindings/idl_in_core.gni`, and `bindings/generated_in_core.gni`).
 - [ ] **Create `LayoutUnboundedPanel`**:
   - [ ] Implement `LayoutUnboundedPanel` class in `third_party/blink/renderer/core/layout/` (likely inheriting from `LayoutBlockFlow`).
   - [ ] Wire up `HTMLPanelElement::CreateLayoutObject` to instantiate `LayoutUnboundedPanel` instead of a standard layout block.

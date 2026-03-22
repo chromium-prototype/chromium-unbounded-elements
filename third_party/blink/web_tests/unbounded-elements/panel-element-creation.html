@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<title>Unbounded Elements: panel element creation</title>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+<body>
+<script>
+test(() => {
+  const panel = document.createElement('panel');
+  assert_true(panel instanceof HTMLElement, 'panel should inherit from HTMLElement');
+  assert_equals(panel.constructor.name, 'HTMLPanelElement', 'panel element class should be HTMLPanelElement');
+  assert_equals(panel.tagName, 'PANEL', 'panel tagName should be uppercase');
+}, 'panel element basic properties');
+</script>
+</body>

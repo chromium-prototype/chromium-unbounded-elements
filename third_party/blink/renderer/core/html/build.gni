@@ -383,6 +383,8 @@ blink_core_sources_html = [
   "html_olist_element.h",
   "html_paragraph_element.cc",
   "html_paragraph_element.h",
+  "html_panel_element.cc",
+  "html_panel_element.h",
   "html_param_element.cc",
   "html_param_element.h",
   "html_capability_element_base.cc",

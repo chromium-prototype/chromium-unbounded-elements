@@ -410,6 +410,10 @@
       name: "p",
       interfaceName: "HTMLParagraphElement",
     },
+    {
+      name: "panel",
+      interfaceName: "HTMLPanelElement",
+    },
     "param",
     {
       name: "picture",
