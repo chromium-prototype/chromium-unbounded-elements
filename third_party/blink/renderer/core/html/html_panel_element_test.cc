@@ -17,7 +17,7 @@ class HTMLPanelElementTest : public PageTestBase {};
 TEST_F(HTMLPanelElementTest, LayoutObjectIsUnboundedPanel) {
   auto* panel = MakeGarbageCollected<HTMLPanelElement>(GetDocument());
   GetDocument().FirstBodyElement()->AppendChild(panel);
-  
+
   UpdateAllLifecyclePhasesForTest();
 
   ASSERT_TRUE(panel->GetLayoutObject());

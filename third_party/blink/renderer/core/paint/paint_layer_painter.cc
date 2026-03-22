@@ -11,6 +11,7 @@
 #include "third_party/blink/renderer/core/frame/local_frame_view.h"
 #include "third_party/blink/renderer/core/frame/settings.h"
 #include "third_party/blink/renderer/core/html/canvas/html_canvas_element.h"
+#include "third_party/blink/renderer/core/html/html_panel_element.h"
 #include "third_party/blink/renderer/core/inspector/inspector_trace_events.h"
 #include "third_party/blink/renderer/core/layout/fragmentation_utils.h"
 #include "third_party/blink/renderer/core/layout/layout_video.h"
@@ -282,6 +283,14 @@ PaintResult PaintLayerPainter::Paint(GraphicsContext& context,
 
   if (object.IsFragmentLessBox()) {
     return kFullyPainted;
+  }
+
+  if (auto* node = object.GetNode()) {
+    if (IsA<HTMLPanelElement>(node)) {
+      // Unbounded panels are painted via an independent rendering pipeline
+      // and must not be painted into the main document.
+      return kFullyPainted;
+    }
   }
 
   // Non self-painting layers without self-painting descendants don't need to be

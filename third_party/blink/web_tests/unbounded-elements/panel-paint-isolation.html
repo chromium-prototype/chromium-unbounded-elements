@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html class="reftest-wait">
+<title>Unbounded Elements: Panel paint isolation</title>
+<link rel="match" href="panel-paint-isolation-expected.html">
+<style>
+  body {
+    margin: 0;
+    background: green;
+  }
+  panel {
+    background: red;
+    width: 100px;
+    height: 100px;
+    position: fixed; /* It already has this from style_adjuster, but just in case */
+    top: 50px;
+    left: 50px;
+  }
+</style>
+<body>
+  <panel>
+    <div style="background: red; width: 50px; height: 50px;"></div>
+  </panel>
+  <script>
+    requestAnimationFrame(() => {
+      document.documentElement.classList.remove('reftest-wait');
+    });
+  </script>
+</body>
+</html>
