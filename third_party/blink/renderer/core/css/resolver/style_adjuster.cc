@@ -65,6 +65,7 @@
 #include "third_party/blink/renderer/core/html/html_marquee_element.h"
 #include "third_party/blink/renderer/core/html/html_meter_element.h"
 #include "third_party/blink/renderer/core/html/html_olist_element.h"
+#include "third_party/blink/renderer/core/html/html_panel_element.h"
 #include "third_party/blink/renderer/core/html/html_plugin_element.h"
 #include "third_party/blink/renderer/core/html/html_progress_element.h"
 #include "third_party/blink/renderer/core/html/html_script_element.h"
@@ -528,6 +529,13 @@ void StyleAdjuster::AdjustStyleForHTMLElement(ComputedStyleBuilder& builder,
   // work for them.
   if (IsA<HTMLDivElement>(element) || IsA<HTMLSpanElement>(element)) {
     return;
+  }
+
+  if (IsA<HTMLPanelElement>(element)) {
+    builder.SetPosition(EPosition::kFixed);
+    builder.SetDisplay(EDisplay::kBlock);
+    // Panel should establish an independent formatting context.
+    builder.SetContain(builder.Contain() | kContainsStrict);
   }
 
   if (auto* image = DynamicTo<HTMLImageElement>(element)) {

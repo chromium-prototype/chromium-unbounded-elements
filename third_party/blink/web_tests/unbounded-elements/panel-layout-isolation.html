@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<title>Unbounded Elements: panel element layout isolation</title>
+<script src="../resources/testharness.js"></script>
+<script src="../resources/testharnessreport.js"></script>
+<body>
+<div id="container" style="width: 100px; height: 100px; overflow: auto; border: 1px solid black; position: relative;">
+  <div id="sibling1" style="width: 50px; height: 50px; background: red;"></div>
+  <panel id="panel" style="width: 1000px; height: 1000px; display: block; background: green;"></panel>
+  <div id="sibling2" style="width: 50px; height: 50px; background: blue;"></div>
+</div>
+<script>
+test(() => {
+  const container = document.getElementById('container');
+  const panel = document.getElementById('panel');
+  const sibling1 = document.getElementById('sibling1');
+  const sibling2 = document.getElementById('sibling2');
+
+  // If the panel is out of flow, it should not expand the container's scrollable area
+  assert_equals(container.scrollWidth, 100, 'container should not have horizontal scroll due to panel');
+  assert_equals(container.scrollHeight, 100, 'container should not have vertical scroll due to panel');
+  
+  // The second sibling should render immediately after the first sibling, ignoring the panel in document flow
+  assert_equals(sibling2.offsetTop, sibling1.offsetTop + sibling1.offsetHeight, 
+      'sibling2 should ignore panel in flow and position right after sibling1');
+
+}, 'panel element is out of flow and does not affect normal flow');
+</script>
+</body>

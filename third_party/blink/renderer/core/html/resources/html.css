@@ -1839,6 +1839,20 @@ dialog:-internal-dialog-in-top-layer {
     background-color: Canvas;
 }
 
+panel {
+    /* https://html.spec.whatwg.org/multipage/rendering.html#flow-content-3 */
+    position: fixed;
+    inset: 0;
+    width: fit-content;
+    height: fit-content;
+    margin: auto;
+    border: solid;
+    padding: 1em;
+    color: CanvasText;
+    background-color: Canvas;
+    display: block;
+}
+
 /* dialog and popover handling of `display`. We need to be careful to get the
    `<dialog popover>` case working correctly, when open as a dialog.
    The `:where()` is added to lower the specificity so it doesn't take

@@ -13,9 +13,9 @@
   - [x] Wire up `HTMLPanelElement::CreateLayoutObject` to instantiate `LayoutUnboundedPanel` instead of a standard layout block.
 
 ### Layout Isolation
-- [ ] **Independent Formatting Context**:
-  - [ ] Ensure `LayoutUnboundedPanel` acts as an independent formatting context.
-  - [ ] Force the element to be out-of-flow (similar to `position: fixed` or Top Layer elements) so its physical dimensions do not expand the main document's scrollbars or affect sibling flow.
+- [x] **Independent Formatting Context**:
+  - [x] Ensure `LayoutUnboundedPanel` acts as an independent formatting context.
+  - [x] Force the element to be out-of-flow (similar to `position: fixed` or Top Layer elements) so its physical dimensions do not expand the main document's scrollbars or affect sibling flow.
 
 ### Paint Isolation (The "Hole Punch")
 - [ ] **Modify Pre-Paint Phase**:
