@@ -1,0 +1,26 @@
+# Unbounded Elements: TODOs
+
+## Milestone 1: DOM & Layout Isolation (The "Hole Punch")
+
+### DOM & Layout Object Creation
+- [ ] **Define the HTML Element**: 
+  - [ ] Add the `<panel>` tag to `third_party/blink/renderer/core/html/html_tag_names.json5`.
+  - [ ] Implement `HTMLPanelElement` C++ class (inheriting from `HTMLElement`).
+- [ ] **Create `LayoutUnboundedPanel`**:
+  - [ ] Implement `LayoutUnboundedPanel` class in `third_party/blink/renderer/core/layout/` (likely inheriting from `LayoutBlockFlow`).
+  - [ ] Wire up `HTMLPanelElement::CreateLayoutObject` to instantiate `LayoutUnboundedPanel` instead of a standard layout block.
+
+### Layout Isolation
+- [ ] **Independent Formatting Context**:
+  - [ ] Ensure `LayoutUnboundedPanel` acts as an independent formatting context.
+  - [ ] Force the element to be out-of-flow (similar to `position: fixed` or Top Layer elements) so its physical dimensions do not expand the main document's scrollbars or affect sibling flow.
+
+### Paint Isolation (The "Hole Punch")
+- [ ] **Modify Pre-Paint Phase**:
+  - [ ] Update `PrePaintTreeWalk` to recognize `LayoutUnboundedPanel`. 
+  - [ ] Ensure it doesn't emit standard paint properties that would force it into the main window's compositing layers.
+- [ ] **Modify Paint Phase**:
+  - [ ] Update `PaintLayerPainter` (or relevant `ObjectPainter`) to check if the current `LayoutObject` is a `LayoutUnboundedPanel`.
+  - [ ] If painting the main window, explicitly **skip** recording paint operations for the panel and all of its descendants.
+- [ ] **Testing**:
+  - [ ] Write a web test (WPT or Blink internal) that inserts a `<panel>` with text and bright background colors, asserting that it does not visually render on the page and does not affect the page's scrollable area.
