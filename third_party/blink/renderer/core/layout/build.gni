@@ -412,6 +412,8 @@ blink_core_sources_layout = [
   "layout_theme_mobile.h",
   "layout_tree_as_text.cc",
   "layout_tree_as_text.h",
+  "layout_unbounded_panel.cc",
+  "layout_unbounded_panel.h",
   "layout_utils.cc",
   "layout_utils.h",
   "layout_video.cc",

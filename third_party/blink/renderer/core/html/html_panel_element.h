@@ -15,6 +15,8 @@ class CORE_EXPORT HTMLPanelElement : public HTMLElement {
 
  public:
   explicit HTMLPanelElement(Document&);
+
+  LayoutObject* CreateLayoutObject(const ComputedStyle&) override;
 };
 
 }  // namespace blink

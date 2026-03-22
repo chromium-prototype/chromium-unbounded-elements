@@ -4,7 +4,7 @@ When working on the Unbounded Elements project, please observe the following gui
 
 ## 1. Commit Hygiene
 - **Verbose Commit Messages**: Ensure commit messages are highly detailed. Explicitly mention the `Bug: ` number (or `None`), testing details (e.g. `TDD-Coverage: <test file> passes`), and a breakdown of all touched files and the reasoning behind structural or configuration changes.
-- **Isolate Documentation Commits**: Always keep changes to documentation (`docs/`) in separate commits from codebase implementation (`third_party/blink/` or similar). Do not bundle design check-ins with actual C++ or web test logic.
+  - **Documentation Commits**: You may include updates to `TODOs.md` in the same commit as the codebase implementation. There is no need for a separate commit.
 
 ## 2. Blink Boilerplate & Build Configurations
 - **Adding new HTML Elements**: It is rarely as simple as just adding a `.h` and `.cc` file. 
@@ -15,7 +15,7 @@ When working on the Unbounded Elements project, please observe the following gui
   - The C++ source files must be appended to the respective directory's GN config, such as `third_party/blink/renderer/core/html/build.gni`.
 
 ## 3. Test-Driven Development (TDD)
-- Validate every primitive operation with a web test located under `third_party/blink/web_tests/unbounded-elements/` before initiating the C++ implementation.
+- Validate every primitive operation with a proper test (e.g., C++ unit tests, or web tests under `third_party/blink/web_tests/unbounded-elements/`) before initiating the implementation. As long as the change is properly verified, it follows best TDD practices.
 - Validate that the test fails in the red phase, and explicitly capture the success in the green phase context.
 
 ## 4. Documentation Upkeep

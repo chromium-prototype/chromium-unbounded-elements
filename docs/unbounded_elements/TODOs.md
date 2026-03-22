@@ -8,9 +8,9 @@
   - [x] Implement `HTMLPanelElement` C++ class (inheriting from `HTMLElement`).
   - [x] Create `html_panel_element.idl` to expose the constructor to JS.
   - [x] Register the new C++ and IDL files in the build system (`html/build.gni`, `bindings/idl_in_core.gni`, and `bindings/generated_in_core.gni`).
-- [ ] **Create `LayoutUnboundedPanel`**:
-  - [ ] Implement `LayoutUnboundedPanel` class in `third_party/blink/renderer/core/layout/` (likely inheriting from `LayoutBlockFlow`).
-  - [ ] Wire up `HTMLPanelElement::CreateLayoutObject` to instantiate `LayoutUnboundedPanel` instead of a standard layout block.
+- [x] **Create `LayoutUnboundedPanel`**:
+  - [x] Implement `LayoutUnboundedPanel` class in `third_party/blink/renderer/core/layout/` (likely inheriting from `LayoutBlockFlow`).
+  - [x] Wire up `HTMLPanelElement::CreateLayoutObject` to instantiate `LayoutUnboundedPanel` instead of a standard layout block.
 
 ### Layout Isolation
 - [ ] **Independent Formatting Context**:
