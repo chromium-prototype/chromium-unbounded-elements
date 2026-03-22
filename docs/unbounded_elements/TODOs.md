@@ -31,7 +31,7 @@
 
 ### Widget Creation & IPC
 - [ ] **Cross-Process Widget Architecture**:
-  - [ ] Introduce a new IPC message (or Mojo interface) allowing the renderer to request a secondary, unparented popup/desktop widget from the browser process for the `<panel>`.
+  - [ ] Re-use the existing browser-process IPC (`blink.mojom.LocalFrameHost.CreateNewPopupWidget`) allowing the renderer to request a secondary, unparented popup/desktop widget from the browser process for the `<panel>`.
   - [ ] Implement the browser-side widget (`UnboundedPanelWidget` on Aura/Views) to hold the compositor surface.
   - [ ] Bind the `<panel>` element's lifecycle (insertion/removal from DOM) to the creation and destruction of this widget.
 

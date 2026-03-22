@@ -43,7 +43,7 @@ Before we can paint to a secondary window, we must stop the main window from pai
 ### Milestone 2: Plumb the Secondary Widget
 We need an OS window to paint into without spinning up a new `LocalFrame`.
 *   Create a new primitive (e.g., `SubTreeWidgetView`) that directly owns a `WidgetBase` and a secondary `cc::LayerTreeHost`.
-*   When `<panel>.show()` is called, invoke the existing browser-process IPC (`blink.mojom.WidgetHost.CreateNewPopupWidget`) to request a native OS window.
+*   When `<panel>.show()` is called, invoke the existing browser-process IPC (`blink.mojom.LocalFrameHost.CreateNewPopupWidget`) to request a native OS window.
 *   Bind the Mojo endpoints to the `SubTreeWidgetView`.
 
 ### Milestone 3: The Paint Split
