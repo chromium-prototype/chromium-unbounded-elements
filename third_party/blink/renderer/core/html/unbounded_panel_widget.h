@@ -6,6 +6,8 @@
 #define THIRD_PARTY_BLINK_RENDERER_CORE_HTML_UNBOUNDED_PANEL_WIDGET_H_
 
 #include "third_party/blink/public/mojom/page/widget.mojom-blink.h"
+#include "third_party/blink/renderer/platform/widget/widget_base_client.h"
+#include "third_party/blink/renderer/platform/widget/widget_base.h"
 #include "third_party/blink/public/mojom/widget/platform_widget.mojom-blink.h"
 #include "third_party/blink/renderer/core/core_export.h"
 #include "third_party/blink/renderer/platform/heap/garbage_collected.h"
@@ -18,9 +20,12 @@
 namespace blink {
 
 class HTMLPanelElement;
+class PaintControllerPersistentData;
+class PaintArtifactCompositor;
 
-class CORE_EXPORT UnboundedPanelWidget
-    : public GarbageCollected<UnboundedPanelWidget> {
+class CORE_EXPORT UnboundedPanelWidget final
+    : public GarbageCollected<UnboundedPanelWidget>,
+      public WidgetBaseClient {
  public:
   explicit UnboundedPanelWidget(HTMLPanelElement* owner_element);
   ~UnboundedPanelWidget();
@@ -32,6 +37,31 @@ class CORE_EXPORT UnboundedPanelWidget
   void Initialize();
   void Destroy();
 
+  // WidgetBaseClient overrides:
+  void BeginMainFrame(const viz::BeginFrameArgs& args) override;
+  void UpdateLifecycle(WebLifecycleUpdate requested_update,
+                       DocumentUpdateReason reason) override;
+  std::unique_ptr<cc::LayerTreeFrameSink> AllocateNewLayerTreeFrameSink()
+      override;
+  WebInputEventResult DispatchBufferedTouchEvents() override;
+  WebInputEventResult HandleInputEvent(
+      const WebCoalescedInputEvent&) override;
+  bool SupportsBufferedTouchEvents() override;
+  void WillHandleGestureEvent(const WebGestureEvent& event,
+                              bool* suppress) override;
+  void WillHandleMouseEvent(const WebMouseEvent& event) override;
+  void ObserveGestureEventAndResult(
+      const WebGestureEvent& gesture_event,
+      const gfx::Vector2dF& unused_delta,
+      const cc::OverscrollBehavior& overscroll_behavior,
+      bool event_processed) override;
+  void UpdateVisualProperties(
+      const VisualProperties& visual_properties) override;
+  const display::ScreenInfos& GetOriginalScreenInfos() override;
+  gfx::Rect ViewportVisibleRect() override;
+  KURL GetURLForDebugTrace() override;
+
+
   bool HasDisplayItemsForTesting() const;
 
  private:
@@ -39,6 +69,9 @@ class CORE_EXPORT UnboundedPanelWidget
 
   Member<HTMLPanelElement> owner_element_;
   Member<PaintControllerPersistentData> paint_controller_persistent_data_;
+  Member<PaintArtifactCompositor> paint_artifact_compositor_;
+
+  std::unique_ptr<WidgetBase> widget_base_;
 
   [[maybe_unused]] HeapMojoAssociatedRemote<mojom::blink::PopupWidgetHost>
       popup_widget_host_;
