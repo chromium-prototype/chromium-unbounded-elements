@@ -38,13 +38,13 @@
 ## Milestone 3: The Paint Split
 
 ### Sub-Tree Compositor & Paint Walk
-- [x] **Secondary PaintController**:
-  - [x] Modify the main thread's `LocalFrameView::UpdateAllLifecyclePhases` (or equivalent) to trigger a **second** targeted Paint walk.
+- [ ] **Secondary PaintController**:
+  - [ ] Modify the main thread's `LocalFrameView::UpdateAllLifecyclePhases` (or equivalent) to trigger a **second** targeted Paint walk.
   - [x] Initialize a new `PaintController` dedicated to the secondary `UnboundedPanelWidget` (or independent `LayerTreeHost`).
-  - [x] Instruct this secondary `PaintController` to begin its tree traversal at the `LayoutUnboundedPanel`.
-- [x] **Coordinate Translation**:
-  - [x] Mathematically shift paint offsets such that the `<panel>`'s top-left corner in the main document's layout is translated to `(0, 0)` within the secondary compositor's coordinate space.
-  - [x] Ensure that hit-testing coordinates on the secondary widget are correctly inversely translated back to the main document.
+  - [ ] Instruct this secondary `PaintController` to begin its tree traversal at the `LayoutUnboundedPanel`.
+- [ ] **Coordinate Translation**:
+  - [ ] Mathematically shift paint offsets such that the `<panel>`'s top-left corner in the main document's layout is translated to `(0, 0)` within the secondary compositor's coordinate space.
+  - [ ] Ensure that hit-testing coordinates on the secondary widget are correctly inversely translated back to the main document.
 
 ### Compositing to the Secondary Widget
 - [x] **Dedicated LayerTreeHost / Pixel Output**:
