@@ -109,9 +109,11 @@
 #include "third_party/blink/renderer/core/html/html_frame_element.h"
 #include "third_party/blink/renderer/core/html/html_frame_set_element.h"
 #include "third_party/blink/renderer/core/html/html_object_element.h"
+#include "third_party/blink/renderer/core/html/html_panel_element.h"
 #include "third_party/blink/renderer/core/html/html_plugin_element.h"
 #include "third_party/blink/renderer/core/html/media/html_video_element.h"
 #include "third_party/blink/renderer/core/html/parser/text_resource_decoder.h"
+#include "third_party/blink/renderer/core/html/unbounded_panel_widget.h"
 #include "third_party/blink/renderer/core/html_names.h"
 #include "third_party/blink/renderer/core/input/event_handler.h"
 #include "third_party/blink/renderer/core/inspector/inspector_trace_events.h"
@@ -3156,6 +3158,14 @@ void LocalFrameView::PaintTree(
       paint_artifact_compositor_->SetNeedsUpdateAfterRepaint(
           previous_artifact,
           paint_controller_persistent_data_->GetPaintArtifact());
+    }
+  }
+
+  if (auto* document = GetFrame().GetDocument()) {
+    for (HTMLPanelElement* panel : document->UnboundedPanels()) {
+      if (UnboundedPanelWidget* widget = panel->GetWidgetForTesting()) {
+        widget->PaintTree();
+      }
     }
   }
 

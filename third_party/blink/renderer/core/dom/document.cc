@@ -259,6 +259,7 @@
 #include "third_party/blink/renderer/core/html/html_image_element.h"
 #include "third_party/blink/renderer/core/html/html_link_element.h"
 #include "third_party/blink/renderer/core/html/html_meta_element.h"
+#include "third_party/blink/renderer/core/html/html_panel_element.h"
 #include "third_party/blink/renderer/core/html/html_object_element.h"
 #include "third_party/blink/renderer/core/html/html_plugin_element.h"
 #include "third_party/blink/renderer/core/html/html_script_element.h"
@@ -9512,6 +9513,7 @@ void Document::Trace(Visitor* visitor) const {
   visitor->Trace(popover_picker_pointerdown_info_);
   visitor->Trace(popovers_waiting_to_hide_);
   visitor->Trace(all_open_popovers_);
+  visitor->Trace(unbounded_panels_);
   visitor->Trace(all_open_dialogs_);
   visitor->Trace(elements_with_interest_);
   visitor->Trace(load_event_delay_timer_);

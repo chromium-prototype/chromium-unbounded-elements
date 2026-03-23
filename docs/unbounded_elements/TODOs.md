@@ -30,18 +30,18 @@
 ## Milestone 2: Plumb the Secondary Widget
 
 ### Widget Creation & IPC
-- [ ] **Cross-Process Widget Architecture**:
-  - [ ] Re-use the existing browser-process IPC (`blink.mojom.LocalFrameHost.CreateNewPopupWidget`) allowing the renderer to request a secondary, unparented popup/desktop widget from the browser process for the `<panel>`.
-  - [ ] Implement the browser-side widget (`UnboundedPanelWidget` on Aura/Views) to hold the compositor surface.
-  - [ ] Bind the `<panel>` element's lifecycle (insertion/removal from DOM) to the creation and destruction of this widget.
+- [x] **Cross-Process Widget Architecture**:
+  - [x] Re-use the existing browser-process IPC (`blink.mojom.LocalFrameHost.CreateNewPopupWidget`) allowing the renderer to request a secondary, unparented popup/desktop widget from the browser process for the `<panel>`.
+  - [x] Implement the renderer-side wrapper (`UnboundedPanelWidget`) to hold the compositor and Mojo interfaces.
+  - [x] Bind the `<panel>` element's lifecycle (insertion/removal from DOM) to the creation and destruction of this widget.
 
 ## Milestone 3: The Paint Split
 
 ### Sub-Tree Compositor & Paint Walk
-- [ ] **Secondary PaintController**:
-  - [ ] Modify the main thread's `LocalFrameView::UpdateAllLifecyclePhases` (or equivalent) to trigger a **second** targeted Paint walk.
-  - [ ] Initialize a new `PaintController` dedicated to the secondary `SubTreeWidgetView` (or independent `LayerTreeHost`).
-  - [ ] Instruct this secondary `PaintController` to begin its tree traversal at the `LayoutUnboundedPanel`.
+- [x] **Secondary PaintController**:
+  - [x] Modify the main thread's `LocalFrameView::UpdateAllLifecyclePhases` (or equivalent) to trigger a **second** targeted Paint walk.
+  - [x] Initialize a new `PaintController` dedicated to the secondary `UnboundedPanelWidget` (or independent `LayerTreeHost`).
+  - [x] Instruct this secondary `PaintController` to begin its tree traversal at the `LayoutUnboundedPanel`.
 - [ ] **Coordinate Translation**:
   - [ ] Mathematically shift paint offsets such that the `<panel>`'s top-left corner in the main document's layout is translated to `(0, 0)` within the secondary compositor's coordinate space.
   - [ ] Ensure that hit-testing coordinates on the secondary widget are correctly inversely translated back to the main document.

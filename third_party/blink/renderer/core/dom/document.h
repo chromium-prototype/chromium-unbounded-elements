@@ -208,6 +208,7 @@ class HTMLHeadElement;
 class HTMLImageElement;
 class HTMLLinkElement;
 class HTMLMetaElement;
+class HTMLPanelElement;
 class HitTestRequest;
 class HttpRefreshScheduler;
 class IntersectionObserverController;
@@ -1724,6 +1725,10 @@ class CORE_EXPORT Document : public ContainerNode,
   HeapHashSet<Member<HTMLElement>>& AllOpenPopovers() {
     return all_open_popovers_;
   }
+
+  HeapHashSet<Member<HTMLPanelElement>>& UnboundedPanels() {
+    return unbounded_panels_;
+  }
   HTMLElement* TopmostPopoverOrHint() const;
   HeapHashSet<Member<HTMLElement>>& PopoversWaitingToHide() {
     return popovers_waiting_to_hide_;
@@ -2975,6 +2980,9 @@ class CORE_EXPORT Document : public ContainerNode,
   HeapHashSet<Member<HTMLElement>> popovers_waiting_to_hide_;
   // A set of all open popovers, of all types.
   HeapHashSet<Member<HTMLElement>> all_open_popovers_;
+
+  // A set of all open unbounded panels.
+  HeapHashSet<Member<HTMLPanelElement>> unbounded_panels_;
 
   // The ordered list of currently-open dialogs, in order they were opened.
   HeapLinkedHashSet<Member<HTMLDialogElement>> all_open_dialogs_;

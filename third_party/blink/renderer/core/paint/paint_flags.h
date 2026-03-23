@@ -38,6 +38,10 @@ enum : unsigned {
   // Used to suppress painting of PII and other sensitive content, allowing
   // the result to be used in WebGL, WebGPU and 2D Canvas.
   kPrivacyPreserving = 1 << 6,
+
+  // Used to run the secondary paint walk which paints the unbounded
+  // panel via an independent pipeline and window.
+  kPaintingUnboundedPanel = 1 << 7,
 };
 }  // namespace PaintFlag
 

@@ -286,7 +286,8 @@ PaintResult PaintLayerPainter::Paint(GraphicsContext& context,
   }
 
   if (auto* node = object.GetNode()) {
-    if (IsA<HTMLPanelElement>(node)) {
+    if (IsA<HTMLPanelElement>(node) &&
+        !(paint_flags & PaintFlag::kPaintingUnboundedPanel)) {
       // Unbounded panels are painted via an independent rendering pipeline
       // and must not be painted into the main document.
       return kFullyPainted;
