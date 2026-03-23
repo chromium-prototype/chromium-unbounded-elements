@@ -46,12 +46,6 @@
   - [x] Mathematically shift paint offsets such that the `<panel>`'s top-left corner in the main document's layout is translated to `(0, 0)` within the secondary compositor's coordinate space.
   - [ ] Ensure that hit-testing coordinates on the secondary widget are correctly inversely translated back to the main document.
 
-## Milestone 4: Event Routing & Input Hit Testing
-- [ ] **Event Interception & Translation**:
-  - [ ] Implement `UnboundedPanelWidget::HandleInputEvent` to intercept UI events (mouse, touch, keyboard).
-  - [ ] Apply the inverse layout translation to hit-testing coordinates so physical window dimensions map into the logical layout coordinates of the main document.
-  - [ ] Inject the translated event into the main document's `EventHandler` to fire DOM events (e.g., `click`).
-
 ### Compositing to the Secondary Widget
 - [x] **Dedicated LayerTreeHost / Pixel Output**:
   - [x] Create a failing Red Phase browser test (`html_panel_element_browsertest.cc`) that asserts the popup widget yields a rendered pixel, ready to be fixed by the plumbing below.
@@ -67,3 +61,9 @@
   - [ ] Extract the calculated physical dimensions from `LayoutUnboundedPanel` (`owner_element_->GetLayoutBox()->PhysicalBorderBoxRect()`) during or after layout updates.
   - [ ] Remove hardcoded `200x200` logical `ShowPopup` dimensions and `400x400` `cc::LayerTreeHost` physical surface bounds from initialization.
   - [ ] Implement an IPC dispatch mechanism (e.g., `SetBounds`) to synchronously resize the secondary OS window to perfectly match the CSS dimensions applied to the `<panel>` element.
+
+## Milestone 4: Event Routing & Input Hit Testing
+- [ ] **Event Interception & Translation**:
+  - [ ] Implement `UnboundedPanelWidget::HandleInputEvent` to intercept UI events (mouse, touch, keyboard).
+  - [ ] Apply the inverse layout translation to hit-testing coordinates so physical window dimensions map into the logical layout coordinates of the main document.
+  - [ ] Inject the translated event into the main document's `EventHandler` to fire DOM events (e.g., `click`).
