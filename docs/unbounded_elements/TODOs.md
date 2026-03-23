@@ -56,4 +56,10 @@
 - [x] **Dedicated LayerTreeHost / Pixel Output**:
   - [x] Create a failing Red Phase browser test (`html_panel_element_browsertest.cc`) that asserts the popup widget yields a rendered pixel, ready to be fixed by the plumbing below.
   - [x] Attach the newly generated paint property trees and display items to the secondary `cc::LayerTreeHost`. (Implemented via `PaintArtifactCompositor` and `WidgetBase` in `UnboundedPanelWidget`)
-  - [ ] Plumb the rendered `CompositorFrame`s to the browser-process's popup widget. Ensure `cc::LayerTreeHost` schedules commits via `SetNeedsCommit()` so pixels are actually drawn to the OS window.
+  - [x] Plumb the rendered `CompositorFrame`s to the browser-process's popup widget. Ensure `cc::LayerTreeHost` correctly captures physical surfaces and synchronizes with the `WebContents` test pipeline.
+
+## Milestone 3 Phase 2: Full Paint Walk Integration
+- [ ] **Full DOM Subtree Rendering**:
+  - [ ] Instead of a mock `FillRect`, properly execute `LayoutObject::Paint()` on the `LayoutUnboundedPanel` and its descendants.
+  - [ ] Manage caching correctly via `DisplayItemClient` lifecycle across multiple `PaintController`s.
+  - [ ] Ensure full `PaintPropertyTreeBuilder` integration for clip and transform nodes so child elements paint relative to the new sub-tree root.
