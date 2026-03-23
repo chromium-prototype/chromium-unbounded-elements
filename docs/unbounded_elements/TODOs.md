@@ -63,3 +63,7 @@
   - [ ] Instead of a mock `FillRect`, properly execute `LayoutObject::Paint()` on the `LayoutUnboundedPanel` and its descendants.
   - [ ] Manage caching correctly via `DisplayItemClient` lifecycle across multiple `PaintController`s.
   - [ ] Ensure full `PaintPropertyTreeBuilder` integration for clip and transform nodes so child elements paint relative to the new sub-tree root.
+- [ ] **Dynamic Window Sizing & Bounds Synchronization**:
+  - [ ] Extract the calculated physical dimensions from `LayoutUnboundedPanel` (`owner_element_->GetLayoutBox()->PhysicalBorderBoxRect()`) during or after layout updates.
+  - [ ] Remove hardcoded `200x200` logical `ShowPopup` dimensions and `400x400` `cc::LayerTreeHost` physical surface bounds from initialization.
+  - [ ] Implement an IPC dispatch mechanism (e.g., `SetBounds`) to synchronously resize the secondary OS window to perfectly match the CSS dimensions applied to the `<panel>` element.
