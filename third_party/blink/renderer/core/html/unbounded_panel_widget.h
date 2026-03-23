@@ -15,6 +15,7 @@
 #include "third_party/blink/renderer/platform/mojo/heap_mojo_associated_remote.h"
 #include "mojo/public/cpp/bindings/pending_associated_receiver.h"
 #include "third_party/blink/renderer/platform/graphics/paint/paint_controller.h"
+#include "third_party/blink/renderer/platform/graphics/paint/display_item_client.h"
 #include "ui/gfx/geometry/rect.h"
 
 namespace blink {
@@ -25,12 +26,16 @@ class PaintArtifactCompositor;
 
 class CORE_EXPORT UnboundedPanelWidget final
     : public GarbageCollected<UnboundedPanelWidget>,
-      public WidgetBaseClient {
+      public WidgetBaseClient,
+      public DisplayItemClient {
  public:
   explicit UnboundedPanelWidget(HTMLPanelElement* owner_element);
-  ~UnboundedPanelWidget();
+  ~UnboundedPanelWidget() override;
 
-  void Trace(Visitor* visitor) const;
+  // DisplayItemClient
+  String DebugName() const override { return "UnboundedPanelWidget"; }
+
+  void Trace(Visitor* visitor) const override;
 
   void PaintTree();
 

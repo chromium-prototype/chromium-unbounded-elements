@@ -3161,13 +3161,7 @@ void LocalFrameView::PaintTree(
     }
   }
 
-  if (auto* document = GetFrame().GetDocument()) {
-    for (HTMLPanelElement* panel : document->UnboundedPanels()) {
-      if (UnboundedPanelWidget* widget = panel->GetWidgetForTesting()) {
-        widget->PaintTree();
-      }
-    }
-  }
+
 
   visual_viewport_or_overlay_needs_repaint_ = false;
 

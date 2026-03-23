@@ -5724,6 +5724,7 @@ RenderWidgetHostImpl* WebContentsImpl::CreateNewPopupWidget(
       {GlobalRoutingID(site_instance_group->process()->GetDeprecatedID(),
                        route_id),
        widget_host});
+  LOG(INFO) << "INSERTED INTO PENDING_WIDGETS! proc_id: " << site_instance_group->process()->GetDeprecatedID() << " route_id: " << route_id << " curr size: " << pending_widgets_.size();
   AddRenderWidgetHostDestructionObserver(widget_host);
 
   return widget_host;
@@ -5959,11 +5960,17 @@ std::optional<CreatedWindow> WebContentsImpl::GetCreatedWindow(
 
 RenderWidgetHostView* WebContentsImpl::GetCreatedWidget(int process_id,
                                                         int route_id) {
+  LOG(INFO) << "GetCreatedWidget CALLED! process_id: " << process_id << " route_id: " << route_id << " pending size: " << pending_widgets_.size();
+  base::debug::StackTrace().Print();
   OPTIONAL_TRACE_EVENT2("content", "WebContentsImpl::GetCreatedWidget",
                         "process_id", process_id, "route_id", route_id);
 
   auto iter = pending_widgets_.find(GlobalRoutingID(process_id, route_id));
   if (iter == pending_widgets_.end()) {
+    LOG(ERROR) << "GetCreatedWidget failed! request_proc: " << process_id << " request_route: " << route_id << " pending_widgets_ size: " << pending_widgets_.size();
+    for (auto& pair : pending_widgets_) {
+      LOG(ERROR) << "  pending widget proc: " << pair.first.child_id << " route: " << pair.first.route_id;
+    }
     DCHECK(false);
     return nullptr;
   }

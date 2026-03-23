@@ -385,6 +385,8 @@ blink_core_sources_html = [
   "html_paragraph_element.h",
   "html_panel_element.cc",
   "html_panel_element.h",
+  "unbounded_panel_widget.cc",
+  "unbounded_panel_widget.h",
   "html_param_element.cc",
   "html_param_element.h",
   "html_capability_element_base.cc",

@@ -3632,6 +3632,7 @@ void RenderWidgetHostImpl::CreateFrameSink(
         compositor_frame_sink_client,
     mojo::PendingRemote<blink::mojom::RenderInputRouterClient>
         viz_rir_client_remote) {
+  LOG(INFO) << "RenderWidgetHostImpl::CreateFrameSink called. view_: " << view_.get() << ", owner: " << view_is_frame_sink_id_owner_;
   // Connects the viz process end of CompositorFrameSink message pipes. The
   // renderer compositor may request a new CompositorFrameSink on context
   // loss, which will destroy the existing CompositorFrameSink.

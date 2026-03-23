@@ -10,6 +10,8 @@
 
 namespace blink {
 
+class UnboundedPanelWidget;
+
 class CORE_EXPORT HTMLPanelElement : public HTMLElement {
   DEFINE_WRAPPERTYPEINFO();
 
@@ -17,6 +19,17 @@ class CORE_EXPORT HTMLPanelElement : public HTMLElement {
   explicit HTMLPanelElement(Document&);
 
   LayoutObject* CreateLayoutObject(const ComputedStyle&) override;
+
+  Node::InsertionNotificationRequest InsertedInto(
+      ContainerNode& insertion_point) override;
+  void RemovedFrom(ContainerNode& insertion_point) override;
+
+  UnboundedPanelWidget* GetWidgetForTesting() const { return widget_.Get(); }
+
+  void Trace(Visitor* visitor) const override;
+
+ private:
+  Member<UnboundedPanelWidget> widget_;
 };
 
 }  // namespace blink
