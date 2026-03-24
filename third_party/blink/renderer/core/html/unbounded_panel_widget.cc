@@ -184,7 +184,7 @@ void UnboundedPanelWidget::UpdateLifecycle(WebLifecycleUpdate requested_update, 
   if (!layout_object)
     return;
 
-  auto* panel_layout = To<LayoutBoxModelObject>(layout_object);
+  auto* panel_layout = To<LayoutBox>(layout_object);
 
   PaintController paint_controller(false, nullptr);
   paint_controller.UpdateCurrentPaintChunkProperties(PropertyTreeState::Root());
@@ -202,8 +202,9 @@ void UnboundedPanelWidget::UpdateLifecycle(WebLifecycleUpdate requested_update, 
   viewport_properties.outer_clip = &ClipPaintPropertyNode::Root();
   viewport_properties.outer_scroll_translation = &TransformPaintPropertyNode::Root();
 
+  PhysicalRect rect = panel_layout->PhysicalBorderBoxRect();
   auto* root = paint_artifact_compositor_->RootLayer();
-  root->SetBounds(gfx::Size(400, 400));
+  root->SetBounds(gfx::Size(rect.Width().ToInt(), rect.Height().ToInt()));
 
   paint_artifact_compositor_->SetNeedsUpdate();
   paint_artifact_compositor_->Update(

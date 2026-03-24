@@ -102,7 +102,7 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, RenderWidgetColorIsBlue) {
       contents->GetPrimaryFrameTree().root()->current_frame_host();
 
   // Trigger relayout to fire the IPC again just in case!
-  EXPECT_TRUE(ExecJs(root_frame_host, "document.getElementById('my_panel').style.background = 'blue';"));
+  EXPECT_TRUE(ExecJs(root_frame_host, "document.getElementById('my_panel').style.background = 'red';"));
   auto eval_result = EvalJs(root_frame_host, "new Promise(resolve => requestAnimationFrame(resolve));");
 
   // By the time EvalJs returns, the IPC should have been processed by the browser.
