@@ -42,15 +42,16 @@
   - [x] Modify the main thread's `LocalFrameView::PaintTree` (or equivalent) to trigger a **second** targeted Paint walk.
   - [x] Initialize a new `PaintController` dedicated to the secondary `UnboundedPanelWidget` (or independent `LayerTreeHost`).
   - [x] Instruct this secondary `PaintController` to begin its tree traversal at the `LayoutUnboundedPanel` via `PaintFlag::kPaintingUnboundedPanel`.
-- [ ] **Coordinate Translation**:
+- [x] **Coordinate Translation**:
   - [x] Mathematically shift paint offsets such that the `<panel>`'s top-left corner in the main document's layout is translated to `(0, 0)` within the secondary compositor's coordinate space.
-  - [ ] Ensure that hit-testing coordinates on the secondary widget are correctly inversely translated back to the main document.
+  - [x] Ensure that hit-testing coordinates on the secondary widget are correctly inversely translated back to the main document.
 
 ### Compositing to the Secondary Widget
-- [x] **Dedicated LayerTreeHost / Pixel Output**:
-  - [x] Create a failing Red Phase browser test (`html_panel_element_browsertest.cc`) that asserts the popup widget yields a rendered pixel, ready to be fixed by the plumbing below.
-  - [x] Attach the newly generated paint property trees and display items to the secondary `cc::LayerTreeHost`. (Implemented via `PaintArtifactCompositor` and `WidgetBase` in `UnboundedPanelWidget`)
-  - [x] Plumb the rendered `CompositorFrame`s to the browser-process's popup widget. Ensure `cc::LayerTreeHost` correctly captures physical surfaces and synchronizes with the `WebContents` test pipeline.
+- [x] Plumb the "Secondary Widget" over Mojo via `CreateNewPopupWidget`.
+- [x] Integrate Paint Isolation (`kTreeWidget` property nodes) for the Custom Element.
+- [x] Enable Compositing to the Secondary Widget (`PaintArtifactCompositor` mapping).
+- [ ] Connect hit testing and routing of input events to the "Secondary Widget".
+- [ ] Implement Window positioning and resize bounds synchronization.
 
 ## Milestone 3 Phase 2: Full Paint Walk Integration
 - [ ] **Full DOM Subtree Rendering**:
