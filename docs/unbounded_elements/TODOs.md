@@ -70,3 +70,10 @@
   - [ ] Implement `UnboundedPanelWidget::HandleInputEvent` to intercept UI events (mouse, touch, keyboard).
   - [ ] Apply the inverse layout translation to hit-testing coordinates so physical window dimensions map into the logical layout coordinates of the main document.
   - [ ] Inject the translated event into the main document's `EventHandler` to fire DOM events (e.g., `click`).
+
+## Current Blocker
+- **Infinite Loop in Frame Sink Allocation**: `WidgetBase::RequestNewLayerTreeFrameSink` is repeatedly calling `UnboundedPanelWidget::AllocateNewLayerTreeFrameSink`. The secondary compositor (`AsyncLayerTreeFrameSink`) drops the connection and fails to initialize because the IPC to create the frame sink (`WidgetHost::CreateFrameSink`) does not reach the browser successfully in time, or drops due to duplicate `FrameSinkId` requests. The main suspect is the asynchronous nature of `CreateNewPopupWidget` IPC competing with the immediate synchronous `LayerTreeHost` initialization in the `UnboundedPanelWidget::Initialize()` constructor.
+- **Next steps to investigate**:
+  - Test moving `widget_base_->InitializeCompositing` inside a Mojo callback for `CreateNewPopupWidget`, or deferring `LayerTreeHost` creation until the `WidgetHost` Remote is confirmed attached and processed.
+  - Validate that the `WidgetBase` in `UnboundedPanelWidget` does not attempt to create the `CompositorFrameSink` on the main page's RenderWidgetHostImpl.
+
