@@ -72,9 +72,7 @@ void UnboundedPanelWidget::Initialize() {
       std::move(popup_widget_host_receiver), std::move(widget_host_receiver),
       std::move(widget));
 
-  popup_widget_host_->ShowPopup(
-      gfx::Rect(0, 0, 0, 0), gfx::Rect(0, 0, 0, 0),
-      BindOnce([]() {}));
+
 
   widget_base_ = std::make_unique<WidgetBase>(
       /*client=*/this,
@@ -130,10 +128,6 @@ void UnboundedPanelWidget::WidgetHostDisconnected() {
 }
 
 void UnboundedPanelWidget::BeginMainFrame(const viz::BeginFrameArgs& args) {
-  LOG(ERROR) << "UnboundedPanelWidget::BeginMainFrame";
-  if (widget_base_ && widget_base_->LayerTreeHost()) {
-    widget_base_->LayerTreeHost()->SetNeedsCommit();
-  }
 }
 
 void UnboundedPanelWidget::UpdateLifecycle(WebLifecycleUpdate requested_update, DocumentUpdateReason reason) {
@@ -215,9 +209,16 @@ void UnboundedPanelWidget::UpdateLifecycle(WebLifecycleUpdate requested_update, 
 
   auto* root = paint_artifact_compositor_->RootLayer();
   root->SetBounds(gfx::Size(initial_width, initial_height));
-  popup_widget_host_->SetPopupBounds(
-      screen_rect,
-      BindOnce([]() {}));
+  if (!has_shown_popup_) {
+    popup_widget_host_->ShowPopup(
+        screen_rect, screen_rect,
+        BindOnce([]() {}));
+    has_shown_popup_ = true;
+  } else {
+    popup_widget_host_->SetPopupBounds(
+        screen_rect,
+        BindOnce([]() {}));
+  }
 
   paint_artifact_compositor_->SetNeedsUpdate();
   paint_artifact_compositor_->Update(

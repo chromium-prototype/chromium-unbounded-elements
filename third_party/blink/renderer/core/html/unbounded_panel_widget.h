@@ -85,6 +85,7 @@ class CORE_EXPORT UnboundedPanelWidget final
       widget_host_;
   [[maybe_unused]] mojo::PendingAssociatedReceiver<mojom::blink::Widget>
       widget_receiver_;
+  bool has_shown_popup_ = false;
 };
 
 }  // namespace blink
