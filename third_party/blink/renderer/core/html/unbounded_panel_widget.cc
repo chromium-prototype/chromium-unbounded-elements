@@ -11,6 +11,8 @@
 #include "third_party/blink/renderer/core/frame/local_frame_client.h"
 #include "third_party/blink/renderer/core/frame/local_frame_view.h"
 #include "third_party/blink/renderer/core/html/html_panel_element.h"
+#include "third_party/blink/renderer/core/paint/paint_layer_painter.h"
+#include "third_party/blink/renderer/platform/graphics/graphics_context.h"
 #include "third_party/blink/renderer/core/layout/layout_box_model_object.h"
 #include "third_party/blink/renderer/core/layout/layout_object.h"
 #include "third_party/blink/renderer/core/paint/paint_layer.h"
@@ -187,19 +189,10 @@ void UnboundedPanelWidget::UpdateLifecycle(WebLifecycleUpdate requested_update, 
   PaintController paint_controller(false, nullptr);
   paint_controller.UpdateCurrentPaintChunkProperties(PropertyTreeState::Root());
 
-  gfx::Rect rect(0, 0, 200, 200);
-  PaintRecorder recorder;
-  cc::PaintCanvas* canvas = recorder.beginRecording();
-  cc::PaintFlags flags;
-  flags.setColor(SK_ColorBLUE);
-  flags.setStyle(cc::PaintFlags::kFill_Style);
-  canvas->drawRect(gfx::RectToSkRect(rect), flags);
-  
-  paint_controller.CreateAndAppend<DrawingDisplayItem>(
-      *panel_layout->Layer(), DisplayItem::kDrawingFirst,
-      rect,
-      recorder.finishRecordingAsPicture(),
-      RasterEffectOutset::kNone, PaintInvalidationReason::kJustCreated);
+  GraphicsContext context(paint_controller);
+
+  PaintLayerPainter(*panel_layout->Layer())
+      .Paint(context, PaintFlag::kPaintingUnboundedPanel);
 
   const PaintArtifact& artifact = paint_controller.CommitNewDisplayItems();
 
