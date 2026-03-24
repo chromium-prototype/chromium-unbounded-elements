@@ -54,10 +54,10 @@
 - [ ] Implement Window positioning and resize bounds synchronization.
 
 ## Milestone 3 Phase 2: Full Paint Walk Integration
-- [ ] **Full DOM Subtree Rendering**:
-  - [ ] Instead of a mock `FillRect`, properly execute `LayoutObject::Paint()` on the `LayoutUnboundedPanel` and its descendants.
-  - [ ] Manage caching correctly via `DisplayItemClient` lifecycle across multiple `PaintController`s.
-  - [ ] Ensure full `PaintPropertyTreeBuilder` integration for clip and transform nodes so child elements paint relative to the new sub-tree root.
+- [x] **Full DOM Subtree Rendering**:
+  - [x] Instead of a mock `FillRect`, properly execute `LayoutObject::Paint()` on the `LayoutUnboundedPanel` and its descendants.
+  - [x] Manage caching correctly via `DisplayItemClient` lifecycle across multiple `PaintController`s.
+  - [x] Ensure full `PaintPropertyTreeBuilder` integration for clip and transform nodes so child elements paint relative to the new sub-tree root.
 - [ ] **Dynamic Window Sizing & Bounds Synchronization**:
   - [ ] Extract the calculated physical dimensions from `LayoutUnboundedPanel` (`owner_element_->GetLayoutBox()->PhysicalBorderBoxRect()`) during or after layout updates.
   - [ ] Remove hardcoded `200x200` logical `ShowPopup` dimensions and `400x400` `cc::LayerTreeHost` physical surface bounds from initialization.
