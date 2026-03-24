@@ -43,23 +43,25 @@ import {nothing} from '//resources/lit/v3_0/lit.rollup.js';
   <div id="searchboxContainer"
       @focusin="${this.onSearchboxContainerFocusin_}"
       @focusout="${this.onSearchboxContainerFocusout_}">
-    <cr-searchbox id="searchbox" ?is-dark="${this.isThemeDark_()}"
-        placeholder-text="$i18n{searchBoxPlaceholder}"
-        ?color-source-is-baseline="${this.colorSourceIsBaseline}"
-        @open-composebox="${this.onOpenComposebox_}"
-        @open-lens-search="${this.onOpenLensSearch_}"
-        @open-voice-search="${this.onOpenVoiceSearch_}" ?shown="${this.realboxShown_}"
-        ?had-secondary-side="${this.realboxHadSecondarySide}"
-        @had-secondary-side-changed="${this.onRealboxHadSecondarySideChanged_}"
-        ?can-show-secondary-side="${this.realboxCanShowSecondarySide}"
-        ?compose-button-enabled="${this.composeButtonEnabled}"
-        ?composebox-enabled="${this.composeboxEnabled}"
-        searchbox-layout-mode="${this.realboxLayoutMode_}"
-        ?ntp-realbox-next-enabled="${this.ntpRealboxNextEnabled_}"
-        ?cycling-placeholders="${this.searchboxCyclingPlaceholders_}"
-        context-menu-glif-animation-state="${this.contextMenuGlifAnimationState_}"
-        ?multi-line-enabled="${this.multiLineEnabled_}">
-    </cr-searchbox>
+    <panel style="display: block; position: absolute; left: 50%; transform: translateX(-50%); top: 100px; width: 600px;">
+      <cr-searchbox id="searchbox" ?is-dark="${this.isThemeDark_()}"
+          placeholder-text="$i18n{searchBoxPlaceholder}"
+          ?color-source-is-baseline="${this.colorSourceIsBaseline}"
+          @open-composebox="${this.onOpenComposebox_}"
+          @open-lens-search="${this.onOpenLensSearch_}"
+          @open-voice-search="${this.onOpenVoiceSearch_}" ?shown="${this.realboxShown_}"
+          ?had-secondary-side="${this.realboxHadSecondarySide}"
+          @had-secondary-side-changed="${this.onRealboxHadSecondarySideChanged_}"
+          ?can-show-secondary-side="${this.realboxCanShowSecondarySide}"
+          ?compose-button-enabled="${this.composeButtonEnabled}"
+          ?composebox-enabled="${this.composeboxEnabled}"
+          searchbox-layout-mode="${this.realboxLayoutMode_}"
+          ?ntp-realbox-next-enabled="${this.ntpRealboxNextEnabled_}"
+          ?cycling-placeholders="${this.searchboxCyclingPlaceholders_}"
+          context-menu-glif-animation-state="${this.contextMenuGlifAnimationState_}"
+          ?multi-line-enabled="${this.multiLineEnabled_}">
+      </cr-searchbox>
+    </panel>
     ${this.showComposebox_ ? html`
       <div id="dialogAnchor"></div>
       <dialog id="composeboxDialog">
