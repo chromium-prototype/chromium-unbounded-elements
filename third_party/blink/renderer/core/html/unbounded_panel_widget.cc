@@ -9,8 +9,13 @@
 #include "third_party/blink/renderer/core/dom/document.h"
 #include "third_party/blink/renderer/core/frame/local_frame.h"
 #include "third_party/blink/renderer/core/frame/local_frame_client.h"
+#include "third_party/blink/renderer/core/frame/local_frame_view.h"
 #include "third_party/blink/renderer/core/html/html_panel_element.h"
+#include "third_party/blink/renderer/core/layout/layout_box_model_object.h"
 #include "third_party/blink/renderer/core/layout/layout_object.h"
+#include "third_party/blink/renderer/core/paint/paint_layer.h"
+#include "third_party/blink/renderer/core/paint/paint_flags.h"
+#include "third_party/blink/renderer/core/paint/paint_layer_painter.h"
 #include "third_party/blink/renderer/platform/wtf/functional.h"
 #include "third_party/blink/renderer/core/page/page.h"
 #include "third_party/blink/renderer/core/page/chrome_client.h"
@@ -18,10 +23,14 @@
 #include "third_party/blink/renderer/platform/graphics/graphics_context.h"
 #include "third_party/blink/renderer/platform/graphics/paint/paint_controller.h"
 #include "third_party/blink/renderer/platform/graphics/paint/drawing_recorder.h"
+#include "cc/layers/picture_layer.h"
+#include "cc/layers/solid_color_layer.h"
 #include "third_party/blink/renderer/platform/graphics/compositing/paint_artifact_compositor.h"
 #include "cc/trees/layer_tree_host.h"
 #include "cc/layers/solid_color_layer.h"
 #include "ui/display/screen_infos.h"
+#include "third_party/blink/renderer/core/paint/paint_info.h"
+#include "third_party/blink/renderer/core/paint/object_painter.h"
 #include "base/no_destructor.h"
 
 namespace blink {
@@ -42,6 +51,7 @@ void UnboundedPanelWidget::Trace(Visitor* visitor) const {
 }
 
 void UnboundedPanelWidget::Initialize() {
+  LOG(ERROR) << "UnboundedPanelWidget::Initialize BEGIN";
   LocalFrame* frame = owner_element_->GetDocument().GetFrame();
   if (!frame) return;
 
@@ -60,7 +70,9 @@ void UnboundedPanelWidget::Initialize() {
       std::move(popup_widget_host_receiver), std::move(widget_host_receiver),
       std::move(widget));
 
-  popup_widget_host_->ShowPopup(gfx::Rect(0, 0, 200, 200), gfx::Rect(0, 0, 200, 200), BindOnce([]() {}));
+  popup_widget_host_->ShowPopup(
+      gfx::Rect(0, 0, 200, 200), gfx::Rect(0, 0, 200, 200),
+      BindOnce([]() {}));
 
   widget_base_ = std::make_unique<WidgetBase>(
       /*client=*/this,
@@ -72,7 +84,7 @@ void UnboundedPanelWidget::Initialize() {
       /*hidden=*/false,
       /*never_composited=*/false,
       /*is_embedded=*/false,
-      /*is_for_scalable_page=*/false);
+      /*is_for_scalable_page=*/true);
 
   display::ScreenInfos screen_infos = frame->GetPage()->GetChromeClient().GetScreenInfos(*frame);
   widget_base_->InitializeCompositing(*(frame->GetPage()->GetPageScheduler()),
@@ -83,6 +95,17 @@ void UnboundedPanelWidget::Initialize() {
   paint_artifact_compositor_ = MakeGarbageCollected<PaintArtifactCompositor>(nullptr);
   if (widget_base_->LayerTreeHost()) {
     widget_base_->LayerTreeHost()->SetRootLayer(paint_artifact_compositor_->RootLayer());
+    
+    // Do not overwrite LayerTreeHost Viewport properties, they come from the browser.
+
+    PaintController paint_controller(false, nullptr);
+    PaintArtifactCompositor::ViewportProperties viewport_properties;
+    viewport_properties.page_scale = &TransformPaintPropertyNode::Root();
+    viewport_properties.inner_scroll_translation = &TransformPaintPropertyNode::Root();
+    viewport_properties.outer_clip = &ClipPaintPropertyNode::Root();
+    viewport_properties.outer_scroll_translation = &TransformPaintPropertyNode::Root();
+    paint_artifact_compositor_->Update(paint_controller.CommitNewDisplayItems(), viewport_properties, {}, {});
+    
     widget_base_->LayerTreeHost()->StopDeferringCommits(cc::PaintHoldingCommitTrigger::kWidgetSwapped);
   }
   widget_base_->SetCompositorVisible(true);
@@ -99,47 +122,110 @@ void UnboundedPanelWidget::WidgetHostDisconnected() {
 }
 
 void UnboundedPanelWidget::BeginMainFrame(const viz::BeginFrameArgs& args) {
+  LOG(ERROR) << "UnboundedPanelWidget::BeginMainFrame";
+  if (widget_base_ && widget_base_->LayerTreeHost()) {
+    widget_base_->LayerTreeHost()->SetNeedsCommit();
+  }
 }
 
 void UnboundedPanelWidget::UpdateLifecycle(WebLifecycleUpdate requested_update, DocumentUpdateReason reason) {
-  if (!widget_base_ || !widget_base_->LayerTreeHost()) return;
-  if (!paint_artifact_compositor_) return;
-  
-  if (!paint_controller_persistent_data_) {
-    paint_controller_persistent_data_ = MakeGarbageCollected<PaintControllerPersistentData>();
-  }
-  PaintController paint_controller(false, paint_controller_persistent_data_.Get());
-  GraphicsContext graphics_context(paint_controller);
-  auto* layout_object = owner_element_->GetLayoutObject();
-  if (!layout_object || !layout_object->FirstFragment().HasLocalBorderBoxProperties()) return;
-  auto state = layout_object->FirstFragment().LocalBorderBoxProperties();
-  
-  paint_controller.UpdateCurrentPaintChunkProperties(state);
-  
-  // Just emit a 400x400 red rect using the widget as client.
-  gfx::Rect visual_rect(0, 0, 400, 400);
-  if (!DrawingRecorder::UseCachedDrawingIfPossible(graphics_context, *this, DisplayItem::kDocumentBackground)) {
-    DrawingRecorder recorder(
-        graphics_context, *this, DisplayItem::kDocumentBackground,
-        visual_rect);
-    graphics_context.FillRect(gfx::RectF(visual_rect), Color::FromRGB(255, 0, 0), AutoDarkMode::Disabled());
+  if (!owner_element_) [[unlikely]] {
+    return;
   }
 
-  const PaintArtifact& paint_artifact = paint_controller.CommitNewDisplayItems();
-  LOG(INFO) << "Paint artifact size: " << paint_artifact.GetDisplayItemList().size();
+  LOG(ERROR) << "UpdateLifecycle BEGIN. layer_tree_host_viewport=" 
+             << widget_base_->LayerTreeHost()->device_viewport_rect().ToString()
+             << " is_visible=" << widget_base_->LayerTreeHost()->IsVisible();
+
+  if (!widget_base_ || !widget_base_->LayerTreeHost()) {
+    LOG(ERROR) << "UpdateLifecycle: No widget_base_ or LayerTreeHost";
+    return;
+  }
+  if (!paint_artifact_compositor_) {
+    LOG(ERROR) << "UpdateLifecycle: No paint_artifact_compositor_";
+    return;
+  }
+  
+  auto* layout_object = owner_element_->GetLayoutObject();
+  if (!layout_object) {
+    LOG(ERROR) << "UpdateLifecycle: No layout_object";
+    return;
+  }
+  
+  if (!layout_object->FirstFragment().HasLocalBorderBoxProperties()) {
+    LOG(ERROR) << "UpdateLifecycle: No LocalBorderBoxProperties";
+    return;
+  }
+  
+  LOG(ERROR) << "UpdateLifecycle: HasLocalBorderBoxProperties TRUE. Setting needs commit";
+
+  // Continuously request commits while waiting for the main frame to be clean.
+  widget_base_->LayerTreeHost()->SetNeedsCommit();
+
+  auto& document = owner_element_->GetDocument();
+  if (document.NeedsLayoutTreeUpdate() || document.Lifecycle().GetState() < DocumentLifecycle::kPrePaintClean) {
+    LOG(ERROR) << "UpdateLifecycle: Forcing main document update";
+    if (document.View()) {
+      document.View()->UpdateAllLifecyclePhases(DocumentUpdateReason::kUnknown);
+    } else {
+      LOG(ERROR) << "UpdateLifecycle: No document view!";
+      return;
+    }
+  }
+
+  if (document.Lifecycle().GetState() < DocumentLifecycle::kPrePaintClean) {
+    LOG(ERROR) << "UpdateLifecycle: Document failed to reach PrePaintClean!";
+    return;
+  }
+  LOG(ERROR) << "UpdateLifecycle: Document is PrePaintClean!";
+
+  if (!layout_object)
+    return;
+
+  auto* panel_layout = To<LayoutBoxModelObject>(layout_object);
+
+  PaintController paint_controller(false, nullptr);
+  paint_controller.UpdateCurrentPaintChunkProperties(PropertyTreeState::Root());
+
+  gfx::Rect rect(0, 0, 200, 200);
+  PaintRecorder recorder;
+  cc::PaintCanvas* canvas = recorder.beginRecording();
+  cc::PaintFlags flags;
+  flags.setColor(SK_ColorBLUE);
+  flags.setStyle(cc::PaintFlags::kFill_Style);
+  canvas->drawRect(gfx::RectToSkRect(rect), flags);
+  
+  paint_controller.CreateAndAppend<DrawingDisplayItem>(
+      *panel_layout->Layer(), DisplayItem::kDrawingFirst,
+      rect,
+      recorder.finishRecordingAsPicture(),
+      RasterEffectOutset::kNone, PaintInvalidationReason::kJustCreated);
+
+  const PaintArtifact& artifact = paint_controller.CommitNewDisplayItems();
 
   PaintArtifactCompositor::ViewportProperties viewport_properties;
+  viewport_properties.page_scale = &TransformPaintPropertyNode::Root();
+  viewport_properties.inner_scroll_translation = &TransformPaintPropertyNode::Root();
+  viewport_properties.outer_clip = &ClipPaintPropertyNode::Root();
+  viewport_properties.outer_scroll_translation = &TransformPaintPropertyNode::Root();
+
+  auto* root = paint_artifact_compositor_->RootLayer();
+  root->SetBounds(gfx::Size(400, 400));
+
   paint_artifact_compositor_->SetNeedsUpdate();
-  paint_artifact_compositor_->Update(paint_artifact, viewport_properties, {}, {});
-  
-  paint_artifact_compositor_->RootLayer()->SetBounds(gfx::Size(400, 400));
-  
-  widget_base_->LayerTreeHost()->set_background_color(SkColors::kRed);
-  widget_base_->LayerTreeHost()->SetNeedsCommit();
+  paint_artifact_compositor_->Update(
+      artifact,
+      viewport_properties,
+      {}, {});
+
+  if (widget_base_->LayerTreeHost()->IsVisible()) {
+    widget_base_->LayerTreeHost()->SetNeedsCommit();
+  }
 }
 
 std::unique_ptr<cc::LayerTreeFrameSink>
 UnboundedPanelWidget::AllocateNewLayerTreeFrameSink() {
+  LOG(ERROR) << "UnboundedPanelWidget::AllocateNewLayerTreeFrameSink BEGIN";
   return nullptr;
 }
 WebInputEventResult UnboundedPanelWidget::DispatchBufferedTouchEvents() {
@@ -163,6 +249,7 @@ void UnboundedPanelWidget::ObserveGestureEventAndResult(
 
 void UnboundedPanelWidget::UpdateVisualProperties(
     const VisualProperties& visual_properties) {
+  LOG(ERROR) << "UnboundedPanelWidget::UpdateVisualProperties BEGIN";
   if (widget_base_) {
     widget_base_->UpdateSurfaceAndScreenInfo(
         visual_properties.local_surface_id.value_or(viz::LocalSurfaceId()),

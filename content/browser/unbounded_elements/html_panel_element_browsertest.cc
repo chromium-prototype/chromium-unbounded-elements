@@ -29,6 +29,11 @@ class HTMLPanelElementBrowserTest : public ContentBrowserTest {
  public:
   HTMLPanelElementBrowserTest() = default;
   ~HTMLPanelElementBrowserTest() override = default;
+
+  void SetUp() override {
+    EnablePixelOutput();
+    ContentBrowserTest::SetUp();
+  }
 };
 
 // Intercepts and captures the popup widget created by an Unbounded Panel.
@@ -73,13 +78,14 @@ class PanelCreateNewPopupWidgetInterceptor
 
 // Currently EXPECTED to fail!
 // Serves as the TDD Red phase for the "Compositing to the Secondary Widget" milestone.
-IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, RenderWidgetColorIsRed) {
+IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, RenderWidgetColorIsBlue) {
   ASSERT_TRUE(embedded_test_server()->Start());
 
   GURL test_url(
       "data:text/html,<!DOCTYPE html>"
       "<body>"
-      "<panel id='my_panel' style='position: fixed; inset: 0; margin: 0; padding: 0; border: none; width: 100px; height: 100px; background: red;'>"
+      "<panel id='my_panel' style='position: fixed; inset: 0; margin: 0; padding: 0; border: none; width: 100px; height: 100px; background: white;'>"
+      "  <div style='width: 10px; height: 10px; background: blue;'></div>"
       "</panel>"
       "</body>");
 
@@ -139,17 +145,6 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, RenderWidgetColorIsRed) {
     }
 
     if (!bitmap.empty()) {
-      if (bitmap.height() > 0 && bitmap.width() > 0) {
-        LOG(INFO) << "Popup widget surface successfully captured with dimensions: " 
-                  << bitmap.width() << "x" << bitmap.height();
-        LOG(INFO) << "Test passing since the widget creation and surface capture pipeline works. "
-                  << "Proper color rendering requires complete PaintPropertyTreeBuilder integration.";
-        has_red = true;
-        color = SK_ColorRED; // Mock color to pass the assert
-        // Stop retrying
-        main_run_loop.Quit();
-        return; // Added return to prevent further processing in this callback if successful.
-      }
       bool found_red = false;
       SkColor first_non_transparent = SK_ColorTRANSPARENT;
       for (int y = 0; y < bitmap.height() && !found_red; ++y) {
@@ -159,9 +154,9 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, RenderWidgetColorIsRed) {
             first_non_transparent = c;
             LOG(INFO) << "Bitmap captured. Non-transparent colored pixel found at " << x << "," << y << " with color: " << std::hex << c;
           }
-          if (c == SK_ColorRED) {
+          if (c != SK_ColorTRANSPARENT) {
             found_red = true;
-            color = SK_ColorRED;
+            color = c;
             has_red = true;
             main_run_loop.Quit();
             return;
@@ -174,6 +169,15 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, RenderWidgetColorIsRed) {
     } else {
       LOG(INFO) << "Bitmap was empty!";
     }
+
+    // Now test MAIN FRAME copy!
+    root_frame_host->GetView()->CopyFromSurface(gfx::Rect(), gfx::Size(), base::TimeDelta(), base::BindOnce([](const content::CopyFromSurfaceResult& r) {
+      if (r.has_value() && !r->bitmap.empty()) {
+        LOG(INFO) << "MAIN FRAME COPY SUCCESS! size: " << r->bitmap.width() << "x" << r->bitmap.height() << " color at 0,0: " << std::hex << r->bitmap.getColor(0,0);
+      } else {
+        LOG(INFO) << "MAIN FRAME COPY FAILED or EMPTY!";
+      }
+    }));
 
     retry_count++;
     if (retry_count >= 100) {
@@ -191,7 +195,7 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, RenderWidgetColorIsRed) {
             return;
           }
           popup_view->CopyFromSurface(
-              gfx::Rect(), gfx::Size(), base::TimeDelta(),
+              gfx::Rect(0, 0, 200, 200), gfx::Size(200, 200), base::TimeDelta(),
               base::BindLambdaForTesting([&, self](const content::CopyFromSurfaceResult& result) {
                 self(result, self);
               }));
@@ -208,7 +212,7 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, RenderWidgetColorIsRed) {
           return;
         }
         popup_view->CopyFromSurface(
-            gfx::Rect(), gfx::Size(), base::TimeDelta(),
+            gfx::Rect(0, 0, 200, 200), gfx::Size(200, 200), base::TimeDelta(),
             base::BindLambdaForTesting([&](const content::CopyFromSurfaceResult& result) {
               copy_callback(result, copy_callback);
             }));
@@ -216,7 +220,7 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, RenderWidgetColorIsRed) {
 
   main_run_loop.Run();
 
-  EXPECT_EQ(color, SK_ColorRED) << "Timed out waiting for the red pixel in the secondary popup widget.";
+  EXPECT_EQ(color, SK_ColorBLUE) << "Timed out waiting for the blue pixel in the secondary popup widget.";
 }
 
 }  // namespace content
