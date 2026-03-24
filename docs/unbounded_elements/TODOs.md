@@ -52,7 +52,7 @@
 - [x] Enable Compositing to the Secondary Widget (`PaintArtifactCompositor` mapping).
 - [ ] Connect hit testing and routing of input events to the "Secondary Widget".
 - [x] Implement resize bounds synchronization.
-- [ ] **Window Positioning**: Translate logical layout coordinates to physical OS screen coordinates using `LocalFrameView::FrameToScreen()`, ensuring the OS popup shifts dynamically to match the element's CSS layout position.
+- [x] **Window Positioning**: Translate logical layout coordinates to physical OS screen coordinates using `LocalFrameView::FrameToScreen()`, ensuring the OS popup shifts dynamically to match the element's CSS layout position.
 
 ## Milestone 3 Phase 2: Full Paint Walk Integration
 - [x] **Full DOM Subtree Rendering**:
@@ -63,7 +63,7 @@
   - [x] Extract the calculated physical dimensions from `LayoutUnboundedPanel` (`owner_element_->GetLayoutBox()->PhysicalBorderBoxRect()`) during or after layout updates.
   - [x] Remove hardcoded `200x200` logical `ShowPopup` dimensions and `400x400` `cc::LayerTreeHost` physical surface bounds from initialization.
   - [x] Implement an IPC dispatch mechanism (e.g., `SetBounds`) to synchronously resize the secondary OS window to perfectly match the CSS dimensions applied to the `<panel>` element.
-  - [ ] Implement Window Positioning by calling `LocalFrameView::FrameToScreen()` on the element's layout rect, translating its logical coordinates into absolute OS screen dimensions before pushing the Mojo `SetBounds` IPC.
+  - [x] Implement Window Positioning by calling `LocalFrameView::FrameToScreen()` on the element's layout rect, translating its logical coordinates into absolute OS screen dimensions before pushing the Mojo `SetBounds` IPC.
 
 ## Milestone 4: Event Routing & Input Hit Testing
 - [ ] **Event Interception & Translation**:

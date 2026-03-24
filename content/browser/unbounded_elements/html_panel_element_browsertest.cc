@@ -267,17 +267,21 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, WindowBoundsSync) {
   initial_run_loop.Run();
 
   // Initial bounds check
-  EXPECT_EQ(popup_view->GetViewBounds().size(), gfx::Size(100, 100));
+  gfx::Rect initial_bounds = popup_view->GetViewBounds();
+  EXPECT_EQ(initial_bounds.size(), gfx::Size(100, 100));
 
-  // Change CSS bounds
+  // Change CSS bounds and position
   EXPECT_TRUE(ExecJs(root_frame_host, "document.getElementById('my_panel').style.width = '300px'; "
-                                      "document.getElementById('my_panel').style.height = '150px';"));
+                                      "document.getElementById('my_panel').style.height = '150px'; "
+                                      "document.getElementById('my_panel').style.left = '50px'; "
+                                      "document.getElementById('my_panel').style.top = '75px';"));
   
   // Wait for layout updates
   auto eval_result = EvalJs(root_frame_host, "new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));");
 
   int retries = 0;
-  while (popup_view->GetViewBounds().size() != gfx::Size(300, 150) && retries < 50) {
+  while ((popup_view->GetViewBounds().size() != gfx::Size(300, 150) ||
+          popup_view->GetViewBounds().origin() == initial_bounds.origin()) && retries < 50) {
     base::RunLoop run_loop;
     base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(
         FROM_HERE, run_loop.QuitClosure(), base::Milliseconds(50));
@@ -286,7 +290,10 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, WindowBoundsSync) {
   }
 
   // New bounds check
-  EXPECT_EQ(popup_view->GetViewBounds().size(), gfx::Size(300, 150));
+  gfx::Rect new_bounds = popup_view->GetViewBounds();
+  EXPECT_EQ(new_bounds.size(), gfx::Size(300, 150));
+  EXPECT_EQ(new_bounds.x() - initial_bounds.x(), 50);
+  EXPECT_EQ(new_bounds.y() - initial_bounds.y(), 75);
 }
 
 }  // namespace content
