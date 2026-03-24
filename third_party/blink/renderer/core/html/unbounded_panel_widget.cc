@@ -73,7 +73,7 @@ void UnboundedPanelWidget::Initialize() {
       std::move(widget));
 
   popup_widget_host_->ShowPopup(
-      gfx::Rect(0, 0, 200, 200), gfx::Rect(0, 0, 200, 200),
+      gfx::Rect(0, 0, 0, 0), gfx::Rect(0, 0, 0, 0),
       BindOnce([]() {}));
 
   widget_base_ = std::make_unique<WidgetBase>(
@@ -116,6 +116,12 @@ void UnboundedPanelWidget::Initialize() {
 void UnboundedPanelWidget::Destroy() {
   if (widget_base_) {
     widget_base_.reset();
+  }
+}
+
+void UnboundedPanelWidget::SetNeedsCommit() {
+  if (widget_base_ && widget_base_->LayerTreeHost()) {
+    widget_base_->LayerTreeHost()->SetNeedsCommit();
   }
 }
 
@@ -203,8 +209,13 @@ void UnboundedPanelWidget::UpdateLifecycle(WebLifecycleUpdate requested_update, 
   viewport_properties.outer_scroll_translation = &TransformPaintPropertyNode::Root();
 
   PhysicalRect rect = panel_layout->PhysicalBorderBoxRect();
+  int initial_width = rect.Width().ToInt();
+  int initial_height = rect.Height().ToInt();
   auto* root = paint_artifact_compositor_->RootLayer();
-  root->SetBounds(gfx::Size(rect.Width().ToInt(), rect.Height().ToInt()));
+  root->SetBounds(gfx::Size(initial_width, initial_height));
+  popup_widget_host_->SetPopupBounds(
+      gfx::Rect(0, 0, initial_width, initial_height),
+      BindOnce([]() {}));
 
   paint_artifact_compositor_->SetNeedsUpdate();
   paint_artifact_compositor_->Update(

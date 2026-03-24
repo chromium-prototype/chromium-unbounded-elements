@@ -223,4 +223,70 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, RenderWidgetColorIsBlue) {
   EXPECT_EQ(color, SK_ColorBLUE) << "Timed out waiting for the blue pixel in the secondary popup widget.";
 }
 
+IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, WindowBoundsSync) {
+  ASSERT_TRUE(embedded_test_server()->Start());
+
+  GURL test_url(
+      "data:text/html,<!DOCTYPE html>"
+      "<body>"
+      "<panel id='my_panel' style='position: fixed; inset: 0; margin: 0; padding: 0; border: none; width: 100px; height: 100px; background: white;'>"
+      "</panel>"
+      "</body>");
+
+  auto* contents = static_cast<WebContentsImpl*>(shell()->web_contents());
+
+  EXPECT_TRUE(NavigateToURL(shell(), test_url));
+  WaitForLoadStop(contents);
+
+  RenderFrameHostImpl* root_frame_host =
+      contents->GetPrimaryFrameTree().root()->current_frame_host();
+
+  // Find the popup RenderWidgetHost
+  RenderProcessHost* process = root_frame_host->GetProcess();
+  RenderWidgetHostImpl* popup_widget_host = nullptr;
+  std::unique_ptr<RenderWidgetHostIterator> widgets(
+      RenderWidgetHost::GetRenderWidgetHosts());
+  while (RenderWidgetHost* widget = widgets->GetNextHost()) {
+    if (widget->GetProcess()->GetID() == process->GetID() &&
+        widget != root_frame_host->GetRenderWidgetHost()) {
+      popup_widget_host = static_cast<RenderWidgetHostImpl*>(widget);
+      break;
+    }
+  }
+
+  ASSERT_TRUE(popup_widget_host) << "Secondary RenderWidgetHost was not created!";
+  RenderWidgetHostViewBase* popup_view = popup_widget_host->GetView();
+  ASSERT_TRUE(popup_view) << "Popup did not create a RenderWidgetHostView!";
+
+  popup_widget_host->WasShown(blink::mojom::RecordContentToVisibleTimeRequestPtr());
+
+  // Wait a bit for layout / mojo
+  base::RunLoop initial_run_loop;
+  base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(
+      FROM_HERE, initial_run_loop.QuitClosure(), base::Milliseconds(100));
+  initial_run_loop.Run();
+
+  // Initial bounds check
+  EXPECT_EQ(popup_view->GetViewBounds().size(), gfx::Size(100, 100));
+
+  // Change CSS bounds
+  EXPECT_TRUE(ExecJs(root_frame_host, "document.getElementById('my_panel').style.width = '300px'; "
+                                      "document.getElementById('my_panel').style.height = '150px';"));
+  
+  // Wait for layout updates
+  auto eval_result = EvalJs(root_frame_host, "new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));");
+
+  int retries = 0;
+  while (popup_view->GetViewBounds().size() != gfx::Size(300, 150) && retries < 50) {
+    base::RunLoop run_loop;
+    base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(
+        FROM_HERE, run_loop.QuitClosure(), base::Milliseconds(50));
+    run_loop.Run();
+    retries++;
+  }
+
+  // New bounds check
+  EXPECT_EQ(popup_view->GetViewBounds().size(), gfx::Size(300, 150));
+}
+
 }  // namespace content

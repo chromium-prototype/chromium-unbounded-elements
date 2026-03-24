@@ -25,6 +25,8 @@
  */
 
 #include "third_party/blink/renderer/core/frame/local_frame_view.h"
+#include "third_party/blink/renderer/core/html/html_panel_element.h"
+#include "third_party/blink/renderer/core/html/unbounded_panel_widget.h"
 
 #include <algorithm>
 #include <memory>
@@ -2082,6 +2084,14 @@ bool LocalFrameView::UpdateAllLifecyclePhases(DocumentUpdateReason reason) {
   }
 #endif
 
+  if (auto* document = frame_->GetDocument()) {
+    for (auto& panel : document->UnboundedPanels()) {
+      if (auto* widget = panel->GetWidgetForTesting()) {
+        widget->SetNeedsCommit();
+      }
+    }
+  }
+
   return updated;
 }
 
@@ -2099,6 +2109,13 @@ bool LocalFrameView::UpdateLifecycleToCompositingInputsClean(
 
 bool LocalFrameView::UpdateAllLifecyclePhasesExceptPaint(
     DocumentUpdateReason reason) {
+  if (auto* document = frame_->GetDocument()) {
+    for (auto& panel : document->UnboundedPanels()) {
+      if (auto* widget = panel->GetWidgetForTesting()) {
+        widget->SetNeedsCommit();
+      }
+    }
+  }
   return GetFrame().LocalFrameRoot().View()->UpdateLifecyclePhases(
       DocumentLifecycle::kPrePaintClean, reason);
 }
