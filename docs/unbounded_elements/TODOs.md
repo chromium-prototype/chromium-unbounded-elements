@@ -71,9 +71,9 @@
   - [ ] Apply the inverse layout translation to hit-testing coordinates so physical window dimensions map into the logical layout coordinates of the main document.
   - [ ] Inject the translated event into the main document's `EventHandler` to fire DOM events (e.g., `click`).
 
-## Current Blocker
-- **Infinite Loop in Frame Sink Allocation**: `WidgetBase::RequestNewLayerTreeFrameSink` is repeatedly calling `UnboundedPanelWidget::AllocateNewLayerTreeFrameSink`. The secondary compositor (`AsyncLayerTreeFrameSink`) drops the connection and fails to initialize because the IPC to create the frame sink (`WidgetHost::CreateFrameSink`) does not reach the browser successfully in time, or drops due to duplicate `FrameSinkId` requests. The main suspect is the asynchronous nature of `CreateNewPopupWidget` IPC competing with the immediate synchronous `LayerTreeHost` initialization in the `UnboundedPanelWidget::Initialize()` constructor.
-- **Next steps to investigate**:
-  - Test moving `widget_base_->InitializeCompositing` inside a Mojo callback for `CreateNewPopupWidget`, or deferring `LayerTreeHost` creation until the `WidgetHost` Remote is confirmed attached and processed.
-  - Validate that the `WidgetBase` in `UnboundedPanelWidget` does not attempt to create the `CompositorFrameSink` on the main page's RenderWidgetHostImpl.
+## Current Status
+- **Fixed IPC Segfaults & FrameSink Loops**: `WidgetBase::RequestNewLayerTreeFrameSink` was previously looping infinitely due to invalid `LocalSurfaceId` allocation before IPC acknowledgement. Attempting to completely defer `InitializeCompositing` caused a secondary crash where `blink::WidgetBase::GetWidgetInputHandler()` segfaulted because `RenderInputRouterClient` couldn't access an uninitialized widget base upon receiving IPCs. 
+- **The Native Fix**: We adopted `WebPagePopupImpl`'s lifecycle model. `InitializeCompositing` is run synchronously upon element initialization, but `widget_base_->SetCompositorVisible(true)` is strictly deferred inside the `OnShowPopupAcknowledged` lambda. This natively resolves both the input crash and the frame routing infinite loop.
+- **Next steps**:
+  - The `HTMLPanelElementBrowserTest.WindowBoundsSync` assertion currently fails (returns 100x150 dimensions instead of 50x75 logic layout dimensions). This proves the bounds update works without hanging, but `new_bounds` needs Device Scale Factor translation applied before coordinate comparisons.
 

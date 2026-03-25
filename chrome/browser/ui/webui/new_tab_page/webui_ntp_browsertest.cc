@@ -31,6 +31,9 @@
 #include "content/public/test/browser_test.h"
 #include "content/public/test/browser_test_utils.h"
 #include "net/dns/mock_host_resolver.h"
+#include "content/public/browser/render_widget_host.h"
+#include "content/public/browser/render_widget_host_iterator.h"
+#include "content/public/browser/render_widget_host_view.h"
 
 namespace {
 
@@ -150,6 +153,54 @@ IN_PROC_BROWSER_TEST_F(WebUiNtpBrowserTest, ProcessPerSite) {
     EXPECT_EQ(tabs[0]->GetPrimaryMainFrame()->GetProcess(),
               tabs[i]->GetPrimaryMainFrame()->GetProcess());
   }
+}
+
+// Verify that the unbounded panel widget is successfully shown on the NTP.
+IN_PROC_BROWSER_TEST_F(WebUiNtpBrowserTest, PanelWidgetShows) {
+  GURL ntp_url(chrome::kChromeUINewTabURL);
+  ASSERT_TRUE(ui_test_utils::NavigateToURL(browser(), ntp_url));
+
+  content::WebContents* web_contents =
+      browser()->tab_strip_model()->GetActiveWebContents();
+
+  // Wait for the ntp-app to load and render the panel.
+  bool panel_exists = false;
+  ASSERT_TRUE(base::test::RunUntil([&]() {
+    auto result = content::EvalJs(web_contents, "!!document.querySelector('ntp-app') && !!document.querySelector('ntp-app').shadowRoot && !!document.querySelector('ntp-app').shadowRoot.querySelector('panel')");
+    if (!result.error.empty()) {
+      LOG(ERROR) << "EvalJs error: " << result.error;
+      return false;
+    }
+    panel_exists = result.ExtractBool();
+    LOG(INFO) << "panel_exists: " << panel_exists;
+    return panel_exists;
+  }));
+  EXPECT_TRUE(panel_exists);
+
+  // Trigger a relayout and render to ensure IPC is dispatched
+  auto raf_result = content::EvalJs(web_contents, "new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve(true))));");
+  if (!raf_result.error.empty()) {
+    LOG(ERROR) << "raf EvalJs error: " << raf_result.error;
+  }
+  EXPECT_TRUE(raf_result.ExtractBool());
+
+  int popup_count = 0;
+  content::RenderProcessHost* process = web_contents->GetPrimaryMainFrame()->GetProcess();
+  std::unique_ptr<content::RenderWidgetHostIterator> widgets(
+      content::RenderWidgetHost::GetRenderWidgetHosts());
+  while (content::RenderWidgetHost* widget = widgets->GetNextHost()) {
+    if (widget->GetProcess()->GetID() == process->GetID() &&
+        widget != web_contents->GetPrimaryMainFrame()->GetRenderWidgetHost()) {
+      popup_count++;
+      content::RenderWidgetHostView* view = widget->GetView();
+      EXPECT_TRUE(view);
+      if (view) {
+        EXPECT_TRUE(view->IsShowing());
+      }
+    }
+  }
+
+  EXPECT_GT(popup_count, 0) << "No secondary RenderWidgetHost was created for the panel!";
 }
 
 // Verify that the WebUI NTP uses an available spare process and does not

@@ -72,10 +72,6 @@ void UnboundedPanelWidget::Initialize() {
       std::move(popup_widget_host_receiver), std::move(widget_host_receiver),
       std::move(widget));
 
-  popup_widget_host_->ShowPopup(
-      gfx::Rect(0, 0, 1, 1), gfx::Rect(0, 0, 1, 1),
-      BindOnce([]() {}));
-
   widget_base_ = std::make_unique<WidgetBase>(
       /*client=*/this,
       /*widget_host=*/CrossVariantMojoAssociatedRemote<mojom::blink::WidgetHostInterfaceBase>(
@@ -88,9 +84,9 @@ void UnboundedPanelWidget::Initialize() {
       /*is_embedded=*/false,
       /*is_for_scalable_page=*/true);
 
-  display::ScreenInfos screen_infos = frame->GetPage()->GetChromeClient().GetScreenInfos(*frame);
+  auto screen_info = frame->GetPage()->GetChromeClient().GetScreenInfos(*frame);
   widget_base_->InitializeCompositing(*(frame->GetPage()->GetPageScheduler()),
-                                      screen_infos, /*settings=*/nullptr,
+                                      screen_info, /*settings=*/nullptr,
                                       /*frame_widget_input_handler=*/nullptr,
                                       /*previous_widget=*/nullptr);
 
@@ -98,8 +94,6 @@ void UnboundedPanelWidget::Initialize() {
   if (widget_base_->LayerTreeHost()) {
     widget_base_->LayerTreeHost()->SetRootLayer(paint_artifact_compositor_->RootLayer());
     
-    // Do not overwrite LayerTreeHost Viewport properties, they come from the browser.
-
     PaintController paint_controller(false, nullptr);
     PaintArtifactCompositor::ViewportProperties viewport_properties;
     viewport_properties.page_scale = &TransformPaintPropertyNode::Root();
@@ -110,7 +104,15 @@ void UnboundedPanelWidget::Initialize() {
     
     widget_base_->LayerTreeHost()->StopDeferringCommits(cc::PaintHoldingCommitTrigger::kWidgetSwapped);
   }
-  widget_base_->SetCompositorVisible(true);
+
+  popup_widget_host_->ShowPopup(
+      gfx::Rect(0, 0, 1, 1), gfx::Rect(0, 0, 1, 1),
+      BindOnce([](UnboundedPanelWidget* widget) {
+        LOG(ERROR) << "UnboundedPanelWidget::OnShowPopupAcknowledged BEGIN via lambda";
+        if (!widget || !widget->widget_base_) return;
+        widget->widget_base_->SetCompositorVisible(true);
+      }, WrapWeakPersistent(this)));
+
 }
 
 void UnboundedPanelWidget::Destroy() {
@@ -262,7 +264,9 @@ void UnboundedPanelWidget::UpdateVisualProperties(
         visual_properties.visible_viewport_size_device_px);
     
     // Trigger a paint immediately because we have new dimensions!
-    widget_base_->LayerTreeHost()->SetNeedsCommit();
+    if (widget_base_->LayerTreeHost()) {
+      widget_base_->LayerTreeHost()->SetNeedsCommit();
+    }
   }
 }
 
