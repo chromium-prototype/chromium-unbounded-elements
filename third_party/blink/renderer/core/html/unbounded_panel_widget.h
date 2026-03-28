@@ -62,6 +62,7 @@ class CORE_EXPORT UnboundedPanelWidget final
       const gfx::Vector2dF& unused_delta,
       const cc::OverscrollBehavior& overscroll_behavior,
       bool event_processed) override;
+  void FocusChanged(mojom::blink::FocusState focus_state) override;
   void UpdateVisualProperties(
       const VisualProperties& visual_properties) override;
   const display::ScreenInfos& GetOriginalScreenInfos() override;

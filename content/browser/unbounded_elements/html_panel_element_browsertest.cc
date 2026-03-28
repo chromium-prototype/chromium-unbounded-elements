@@ -381,4 +381,83 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, InputEventRouting) {
   EXPECT_EQ(clicks, 1);
 }
 
+IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, FocusAndActivationRouting) {
+  ASSERT_TRUE(embedded_test_server()->Start());
+
+  GURL test_url(
+      "data:text/html,<!DOCTYPE html>"
+      "<body>"
+      "<panel id='my_panel' style='position: fixed; inset: 0; margin: 0; padding: 0; border: none; width: 200px; height: 200px; background: white;'>"
+      "  <input id='my_input' type='text' style='position: absolute; left: 10px; top: 10px; width: 100px; height: 20px;' />"
+      "</panel>"
+      "</body>");
+
+  auto* contents = static_cast<WebContentsImpl*>(shell()->web_contents());
+
+  EXPECT_TRUE(NavigateToURL(shell(), test_url));
+  WaitForLoadStop(contents);
+
+  RenderFrameHostImpl* root_frame_host =
+      contents->GetPrimaryFrameTree().root()->current_frame_host();
+
+  // Find the popup RenderWidgetHost
+  RenderProcessHost* process = root_frame_host->GetProcess();
+  RenderWidgetHostImpl* popup_widget_host = nullptr;
+  std::unique_ptr<RenderWidgetHostIterator> widgets(
+      RenderWidgetHost::GetRenderWidgetHosts());
+  while (RenderWidgetHost* widget = widgets->GetNextHost()) {
+    if (widget->GetProcess()->GetID() == process->GetID() &&
+        widget != root_frame_host->GetRenderWidgetHost()) {
+      popup_widget_host = static_cast<RenderWidgetHostImpl*>(widget);
+      break;
+    }
+  }
+
+  ASSERT_TRUE(popup_widget_host) << "Secondary RenderWidgetHost was not created!";
+  RenderWidgetHostViewBase* popup_view = popup_widget_host->GetView();
+  ASSERT_TRUE(popup_view) << "Popup did not create a RenderWidgetHostView!";
+
+  popup_widget_host->WasShown(blink::mojom::RecordContentToVisibleTimeRequestPtr());
+
+  // Wait a bit for layout / mojo
+  auto eval_result = EvalJs(root_frame_host, "new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));");
+
+  // Simulate the OS focusing the secondary window and blurring the main window
+  auto* main_rwh = static_cast<RenderWidgetHostImpl*>(root_frame_host->GetRenderWidgetHost());
+  main_rwh->Blur();
+  main_rwh->SetActive(false);
+  
+  popup_widget_host->Focus();
+
+  // Send a mouse down event directly onto the input field. 
+  // It is located at (10, 10). Let's click at local (20, 20).
+  blink::WebMouseEvent mouse_down(
+      blink::WebInputEvent::Type::kMouseDown,
+      blink::WebInputEvent::kNoModifiers,
+      base::TimeTicks::Now());
+  mouse_down.button = blink::WebPointerProperties::Button::kLeft;
+  mouse_down.click_count = 1;
+  mouse_down.SetPositionInWidget(20, 20);
+  mouse_down.SetPositionInScreen(20, 20);
+  popup_widget_host->ForwardMouseEvent(mouse_down);
+
+  blink::WebMouseEvent mouse_up(
+      blink::WebInputEvent::Type::kMouseUp,
+      blink::WebInputEvent::kNoModifiers,
+      base::TimeTicks::Now());
+  mouse_up.button = blink::WebPointerProperties::Button::kLeft;
+  mouse_up.click_count = 1;
+  mouse_up.SetPositionInWidget(20, 20);
+  mouse_up.SetPositionInScreen(20, 20);
+  popup_widget_host->ForwardMouseEvent(mouse_up);
+
+  // Check if activeElement is our input.
+  bool is_focused = EvalJs(root_frame_host, "document.activeElement === document.getElementById('my_input')").ExtractBool();
+  EXPECT_TRUE(is_focused) << "The input element did not receive focus!";
+  
+  // Also check if the window/document has focus.
+  bool has_focus = EvalJs(root_frame_host, "document.hasFocus()").ExtractBool();
+  EXPECT_TRUE(has_focus) << "The document does not believe it has focus after clicking the panel!";
+}
+
 }  // namespace content

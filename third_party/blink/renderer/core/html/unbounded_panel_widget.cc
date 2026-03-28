@@ -20,6 +20,7 @@
 #include "third_party/blink/renderer/core/paint/paint_layer_painter.h"
 #include "third_party/blink/renderer/platform/wtf/functional.h"
 #include "third_party/blink/renderer/core/page/page.h"
+#include "third_party/blink/renderer/core/page/focus_controller.h"
 #include "third_party/blink/renderer/core/page/chrome_client.h"
 #include "third_party/blink/renderer/platform/scheduler/public/page_scheduler.h"
 #include "third_party/blink/renderer/platform/graphics/graphics_context.h"
@@ -249,6 +250,17 @@ WebInputEventResult UnboundedPanelWidget::HandleInputEvent(
   auto* panel_layout = To<LayoutBox>(layout_object);
   gfx::Rect absolute_rect = panel_layout->AbsoluteBoundingBoxRect();
   gfx::PointF offset(absolute_rect.x(), absolute_rect.y());
+  
+  // Natively force the main document to be active. When the OS focuses the secondary 
+  // popup window, the browser process receives a blur for the main WebContents, 
+  // preventing carets from blinking and suppressing document.hasFocus(). By intercepting 
+  // interaction here, we coerce the Page back into an active/focused state.
+  if (auto* page = document.GetPage()) {
+    if (!page->GetFocusController().IsActive() || !page->GetFocusController().IsFocused()) {
+      page->GetFocusController().SetActive(true);
+      page->GetFocusController().SetFocused(true);
+    }
+  }
 
   WebCoalescedInputEvent translated_coalesced(coalesced_event);
   WebInputEvent* mutable_event = translated_coalesced.EventPointer();
@@ -288,6 +300,29 @@ void UnboundedPanelWidget::ObserveGestureEventAndResult(
     const gfx::Vector2dF& unused_delta,
     const cc::OverscrollBehavior& overscroll_behavior,
     bool event_processed) {}
+
+void UnboundedPanelWidget::FocusChanged(mojom::blink::FocusState focus_state) {
+  if (!owner_element_) [[unlikely]] return;
+  auto& document = owner_element_->GetDocument();
+  auto* page = document.GetPage();
+  if (!page) return;
+
+  bool is_active = (focus_state == mojom::blink::FocusState::kFocused) ||
+                   (focus_state == mojom::blink::FocusState::kNotFocusedAndActive);
+  bool is_focused = (focus_state == mojom::blink::FocusState::kFocused);
+
+  // When the UnboundedPanelWidget gains focus, we MUST force the page's focus controller
+  // to believe it is active so the caret can blink within the panel.
+  // We do NOT want to blindly blur the page if the panel loses focus, because the main window
+  // might still be actively focused without us knowing. The main window's WebFrameWidgetImpl 
+  // will correctly receive blur events from the browser process if the entire app is blurred.
+  if (is_active) {
+    page->GetFocusController().SetActive(true);
+  }
+  if (is_focused) {
+    page->GetFocusController().SetFocused(true);
+  }
+}
 
 void UnboundedPanelWidget::UpdateVisualProperties(
     const VisualProperties& visual_properties) {
