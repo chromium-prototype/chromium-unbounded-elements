@@ -115,6 +115,8 @@
 #include "third_party/blink/renderer/core/html/html_frame_owner_element.h"
 #include "third_party/blink/renderer/core/html/html_plugin_element.h"
 #include "third_party/blink/renderer/core/html/plugin_document.h"
+#include "third_party/blink/renderer/core/html/html_panel_element.h"
+#include "third_party/blink/renderer/core/html/unbounded_panel_widget.h"
 #include "third_party/blink/renderer/core/input/context_menu_allowed_scope.h"
 #include "third_party/blink/renderer/core/input/event_handler.h"
 #include "third_party/blink/renderer/core/input/touch_action_util.h"
@@ -3932,6 +3934,15 @@ void WebFrameWidgetImpl::InjectScrollbarGestureScroll(
 
 void WebFrameWidgetImpl::DidChangeCursor(const ui::Cursor& cursor) {
   widget_base_->SetCursor(cursor);
+  if (LocalFrame* frame = local_root_->GetFrame()) {
+    if (Document* document = frame->GetDocument()) {
+      for (const auto& panel : document->UnboundedPanels()) {
+        if (auto* widget = panel->GetWidget()) {
+          widget->DidChangeCursor(cursor);
+        }
+      }
+    }
+  }
 }
 
 bool WebFrameWidgetImpl::SetComposition(

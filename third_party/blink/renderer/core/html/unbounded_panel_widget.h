@@ -18,6 +18,8 @@
 #include "third_party/blink/renderer/platform/graphics/paint/paint_controller.h"
 #include "third_party/blink/renderer/platform/graphics/paint/display_item_client.h"
 #include "ui/gfx/geometry/rect.h"
+#include "ui/base/cursor/cursor.h"
+#include <optional>
 
 namespace blink {
 
@@ -70,10 +72,13 @@ class CORE_EXPORT UnboundedPanelWidget final
   KURL GetURLForDebugTrace() override;
 
 
-  bool HasDisplayItemsForTesting() const;
+  bool HasDisplayItemsForTesting() const { return true; }
   void SetNeedsMouseCapture(bool capture);
+  void DidChangeCursor(const ui::Cursor& cursor);
+  const std::optional<ui::Cursor>& last_cursor_for_testing() const { return last_cursor_for_testing_; }
 
  private:
+  std::optional<ui::Cursor> last_cursor_for_testing_;
   void WidgetHostDisconnected();
 
   Member<HTMLPanelElement> owner_element_;

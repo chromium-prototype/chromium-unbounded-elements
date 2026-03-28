@@ -31,6 +31,7 @@ class CORE_EXPORT HTMLPanelElement : public HTMLElement {
   void DefaultEventHandler(Event&) override;
 
   UnboundedPanelWidget* GetWidgetForTesting() const { return widget_.Get(); }
+  UnboundedPanelWidget* GetWidget() const { return widget_.Get(); }
 
   void Trace(Visitor* visitor) const override;
 

@@ -372,4 +372,12 @@ void UnboundedPanelWidget::SetNeedsMouseCapture(bool capture) {
     popup_widget_host_->SetPopupCapture(capture);
   }
 }
+
+void UnboundedPanelWidget::DidChangeCursor(const ui::Cursor& cursor) {
+  last_cursor_for_testing_ = cursor;
+  if (widget_base_) {
+    widget_base_->SetCursor(cursor);
+  }
+}
+
 }  // namespace blink

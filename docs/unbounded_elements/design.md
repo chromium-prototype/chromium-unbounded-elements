@@ -72,5 +72,5 @@ Coordinate the `BeginMainFrame` lifecycle between the two windows.
 
 *   **Compositor State and Animations**: Blink's `cc` layer assumes hardware-accelerated CSS animations run on a single `LayerTreeHost`. We must ensure animations inside the `<panel>` are correctly dispatched to the secondary `LayerTreeHost`.
 *   **Accessibility (A11y)**: How does the accessibility tree model a single document spanning multiple OS windows? Screen readers generally expect a window to map 1:1 with an accessibility root.
-*   **Focus Management**: Focus is traditionally a document-level concept. If focus moves into the `<panel>`, does the main window lose OS-level focus? How does this impact the `:focus` pseudo-class and keyboard event routing?
+*   **Focus Management (Resolved)**: When the secondary OS window gains focus naturally, it suppresses global document activation in the main `WebContents`. To fix this, `UnboundedPanelWidget::HandleInputEvent` and `FocusChanged` natively intercept interactions and coerce the main `Page`'s `FocusController` back into an active and focused state. This seamlessly maintains `:focus` styles, caret blinking, and keyboard event routing into the main DOM.
 *   **Intersection Observers**: If the unbounded panel is moved off-screen relative to its secondary OS window, how do Intersection Observers behave?
