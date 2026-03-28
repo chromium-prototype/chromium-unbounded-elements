@@ -102,4 +102,8 @@
 
 - **Next steps**:
   - [x] Implement Page Visibility & Tab Switching: hide Unbounded panels when the browser tab is backgrounded.
-  - Implement Window Drag Synchronization to fix lag during main window drags.
+  - [ ] Implement Window Drag Synchronization to fix lag during main window drags.
+  - [ ] Fix popup DSF at 2x screen scaling: at 2x scale, the popup appears to use a 2x larger DSF than the browser window, doubling the font size, and text selection breaks (likely due to incorrect event coordinate translation).
+  - [ ] Fix text selection cursor: when mousedown and moving to select text, the cursor changes from a caret to a normal icon. It should remain a caret.
+  - [ ] Fix rendering issue in `panel-paint-sophisticated.html`: adding an `<input>` next to a `<p>` makes the `<p>` invisible until its text is selected.
+  - [ ] Fix caret in `<input>`: when the `<input>` is focused, it accepts keyboard input but there is no blinking caret cursor.
