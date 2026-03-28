@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include "third_party/blink/renderer/core/html/unbounded_panel_widget.h"
+#include "cc/trees/property_ids.h"
 
 #include "third_party/blink/public/mojom/frame/frame.mojom-blink.h"
 #include "third_party/blink/public/mojom/page/widget.mojom-blink.h"
@@ -227,10 +228,17 @@ void UnboundedPanelWidget::UpdateLifecycle(WebLifecycleUpdate requested_update, 
       viewport_properties,
       {}, {});
 
-  for (auto& child : root->children()) {
-    child->SetOffsetToTransformParent(
-        child->offset_to_transform_parent() -
-        gfx::Vector2dF(absolute_rect.x(), absolute_rect.y()));
+  gfx::Rect device_viewport_rect(0, 0, physical_width, physical_height);
+  widget_base_->LayerTreeHost()->SetViewportRectAndScale(
+      device_viewport_rect,
+      widget_base_->GetOriginalDeviceScaleFactor(),
+      widget_base_->local_surface_id_from_parent());
+
+  if (auto* property_trees = widget_base_->LayerTreeHost()->property_trees()) {
+    if (auto* root_node = property_trees->transform_tree_mutable().Node(cc::kSecondaryRootPropertyNodeId)) {
+      root_node->local.Translate(-absolute_rect.x(), -absolute_rect.y());
+      property_trees->transform_tree_mutable().set_needs_update(true);
+    }
   }
 
   if (widget_base_->LayerTreeHost()->IsVisible()) {
@@ -275,6 +283,11 @@ WebInputEventResult UnboundedPanelWidget::HandleInputEvent(
 
   if (WebInputEvent::IsMouseEventType(mutable_event->GetType())) {
     WebMouseEvent* mouse_event = static_cast<WebMouseEvent*>(mutable_event);
+    if (mouse_event->GetType() == WebInputEvent::Type::kMouseDown) {
+      is_mouse_button_down_ = true;
+    } else if (mouse_event->GetType() == WebInputEvent::Type::kMouseUp) {
+      is_mouse_button_down_ = false;
+    }
     mouse_event->SetPositionInWidget(mouse_event->PositionInWidget().x() + offset.x(),
                                      mouse_event->PositionInWidget().y() + offset.y());
   } else if (WebInputEvent::IsPointerEventType(mutable_event->GetType())) {
@@ -378,6 +391,16 @@ void UnboundedPanelWidget::SetNeedsMouseCapture(bool capture) {
 
 void UnboundedPanelWidget::DidChangeCursor(const ui::Cursor& cursor) {
   last_cursor_for_testing_ = cursor;
+  
+  // Suppress cursor updates if the mouse button is down (dragging).
+  // This mirrors how the OS suppresses cursor updates for the main
+  // browser window when it has implicit mouse capture. Since popups
+  // don't always get OS capture automatically, we enforce the visual
+  // text-selection caret consistency here.
+  if (is_mouse_button_down_) {
+    return;
+  }
+
   if (widget_base_) {
     widget_base_->SetCursor(cursor);
   }

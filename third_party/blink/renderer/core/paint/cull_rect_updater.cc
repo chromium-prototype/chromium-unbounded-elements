@@ -7,6 +7,7 @@
 #include "base/trace_event/trace_event.h"
 #include "third_party/blink/public/common/features.h"
 #include "third_party/blink/renderer/core/frame/local_frame.h"
+#include "third_party/blink/renderer/core/html/html_panel_element.h"
 #include "third_party/blink/renderer/core/frame/local_frame_view.h"
 #include "third_party/blink/renderer/core/frame/pagination_state.h"
 #include "third_party/blink/renderer/core/layout/layout_embedded_content.h"
@@ -99,6 +100,11 @@ bool ShouldUseInfiniteCullRect(
   if (IsA<LayoutView>(object) && !object.GetFrame()->ClipsContent() &&
       // We use custom top cull rect per page when printing.
       !is_printing) {
+    return true;
+  }
+
+  if (IsA<HTMLPanelElement>(object.GetNode())) {
+    subtree_should_use_infinite_cull_rect = true;
     return true;
   }
 
