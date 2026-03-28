@@ -483,7 +483,7 @@ void RenderWidgetHostViewBase::UpdateScreenInfo() {
   // may reposition a popup if part of it is going to be shown outside a
   // display's work area. Note that Wayland clients cannot know where their
   // windows are located and cannot adjust bounds).
-  if (widget_type_ == WidgetType::kPopup) {
+  if (widget_type_ == WidgetType::kPopup || widget_type_ == WidgetType::kUnboundedPanel) {
     if (host()) {
       force_sync_visual_properties = true;
       host()->SendScreenRects();

@@ -7,7 +7,7 @@
 
 namespace content {
 
-enum class WidgetType { kFrame, kPopup };
+enum class WidgetType { kFrame, kPopup, kUnboundedPanel };
 
 }  // namespace content
 

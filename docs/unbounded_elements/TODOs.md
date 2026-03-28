@@ -50,7 +50,7 @@
 - [x] Plumb the "Secondary Widget" over Mojo via `CreateNewPopupWidget`.
 - [x] Integrate Paint Isolation (`kTreeWidget` property nodes) for the Custom Element.
 - [x] Enable Compositing to the Secondary Widget (`PaintArtifactCompositor` mapping).
-- [ ] Connect hit testing and routing of input events to the "Secondary Widget".
+- [x] Connect hit testing and routing of input events to the "Secondary Widget".
 - [x] Implement resize bounds synchronization.
 - [x] **Window Positioning**: Translate logical layout coordinates to physical OS screen coordinates using `LocalFrameView::FrameToScreen()`, ensuring the OS popup shifts dynamically to match the element's CSS layout position.
 
@@ -79,7 +79,7 @@
 - [x] **Positioning Offset Issue**: Fixed. Added DocumentToFrame() and verified CSS behavior.
 - [ ] **DevTools Overlay Mapping**: When hovering over panel elements in DevTools, the inspector overlay highlights the physical region inside the parent document. Coordinate translation must be plumbed into the DevTools overlay renderer.
 - [x] **Window Drag Synchronization**: Fixed. When dragging the main browser window, or moving it programmatically, the popup natively intercepts `UpdateScreenRects` on the child frame to synchronously re-emit Mojo bounds IPCs. Decoupling this from layout/lifecycle updates resolved all lag.
-- [ ] **Z-Order Independence**: The popup behaves as an "always-on-top" window and obscures other independent OS applications (like the terminal). We need to decouple the widget from standard `WidgetType::kPopup` top-most Z-order logic so it interleaves normally.
+- [x] **Z-Order Independence**: Fixed. The popup now behaves as a normal `WidgetType::kUnboundedPanel` window (e.g. `WINDOW_TYPE_NORMAL` on Aura) instead of `WidgetType::kPopup`, decoupling it from the top-most Z-order logic so it interleaves normally with other OS applications.
 - [x] **Cursor Mapping**: Fixed. The mouse cursor does not change state when hovering over interactive elements (e.g., `<input>`, text selection). We need to plumb cursor change requests from the main `WebFrameWidgetImpl` back to the secondary widget's `WidgetBase` so the OS receives the updated cursor shape.
 - [x] **Focus, Activation, and IME**: Clicking an `<input>` element correctly selects text but does not focus it, and the blinking caret does not appear. We need to investigate Chromium's focus transfer logic to ensure the secondary window correctly signals `Activation` to the main window's node, properly establishing focus state for IME input.
 - [x] **Page Visibility & Tab Switching**: Sub-widgets remain visible on the OS desktop even when the parent tab is backgrounded or switched. We must tie the unbounded `<panel>`'s lifecycle directly to the host `WebContents` visibility state to hide it when the user switches tabs.

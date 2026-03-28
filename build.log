@@ -1,0 +1,16 @@
+Detected AI agent env. Prepending --quiet --batch=false --heartbeat_period=30s to improve latency and reduce context pollution. User-supplied flags take precedence.
+depot_tools/siso.py: ninja --quiet --batch=false --heartbeat_period=30s -C out/Release content_browsertests --metrics_labels type=developer,tool=siso,host_os=linux --enable_cloud_monitoring --enable_cloud_profiler --enable_cloud_trace --enable_cloud_logging --metrics_project=rbe-chrome-untrusted
+In module 'std' imported from ../../content/public/test/render_view_test.h:10:
+[1mgen/third_party/libc++/src/include/__memory/unique_ptr.h:756:30: [0m[0;1;31merror: [0m[1mallocating an object of abstract class type 'content::FakeRenderWidgetHost'[0m
+  756 |   return unique_ptr<_Tp>(new _Tp(std::forward<_Args>(__args)...));[0m
+      | [0;1;32m                             ^
+[0m[1m../../content/public/test/render_view_test.cc:873:15: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::make_unique<content::FakeRenderWidgetHost, 0>' requested here[0m
+  873 |   return std::make_unique<FakeRenderWidgetHost>();[0m
+      | [0;1;32m              ^
+[0m[1mgen/third_party/blink/public/mojom/page/widget.mojom.h:369:16: [0m[0;1;36mnote: [0munimplemented pure virtual method 'SetIsUnboundedPanel' in 'FakeRenderWidgetHost'[0m
+  369 |   virtual void SetIsUnboundedPanel() = 0;[0m
+      | [0;1;32m               ^
+[0m1 error generated.
+
+29.94s Build Failure: 601 done, 1 failed, 221 remaining - 20.08/s
+ 1 steps failed: exit=1

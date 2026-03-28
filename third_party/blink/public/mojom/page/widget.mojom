@@ -256,4 +256,8 @@ interface PopupWidgetHost {
  
   // Set whether the popup should trap OS-level mouse capture.
   SetPopupCapture(bool capture);
+
+  // Set whether the popup represents an Unbounded Panel, which causes it to
+  // be independent in Z-order rather than top-most.
+  SetIsUnboundedPanel();
 };

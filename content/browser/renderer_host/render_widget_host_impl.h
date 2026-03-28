@@ -365,6 +365,7 @@ class CONTENT_EXPORT RenderWidgetHostImpl
   void SetPopupBounds(const gfx::Rect& bounds,
                       SetPopupBoundsCallback callback) override;
   void SetPopupCapture(bool capture) override;
+  void SetIsUnboundedPanel() override;
 
   // RenderInputRouterDelegate implementation.
   input::RenderWidgetHostViewInput* GetPointerLockView() override;

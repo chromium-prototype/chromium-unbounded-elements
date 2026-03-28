@@ -428,7 +428,7 @@ void RenderWidgetHostViewAura::InitAsPopup(
     RenderWidgetHostView* parent_host_view,
     const gfx::Rect& bounds_in_screen,
     const gfx::Rect& anchor_rect) {
-  CHECK_EQ(widget_type_, WidgetType::kPopup);
+  CHECK(widget_type_ == WidgetType::kPopup || widget_type_ == WidgetType::kUnboundedPanel);
   CHECK(!static_cast<RenderWidgetHostViewBase*>(parent_host_view)
              ->IsRenderWidgetHostViewChildFrame());
 
@@ -445,14 +445,18 @@ void RenderWidgetHostViewAura::InitAsPopup(
     // similar mechanism to ensure a second popup doesn't cause the first one
     // to never get a chance to filter events. See crbug.com/160589.
     CHECK(old_child->popup_parent_host_view_ == popup_parent_host_view_);
-    if (transient_window_client) {
+    if (transient_window_client && old_child->widget_type_ != WidgetType::kUnboundedPanel) {
       transient_window_client->RemoveTransientChild(
         popup_parent_host_view_->window_, old_child->window_);
     }
     old_child->popup_parent_host_view_ = nullptr;
   }
   popup_parent_host_view_->SetPopupChild(this);
-  CreateAuraWindow(aura::client::WINDOW_TYPE_MENU);
+  if (widget_type_ == WidgetType::kUnboundedPanel) {
+    CreateAuraWindow(aura::client::WINDOW_TYPE_NORMAL);
+  } else {
+    CreateAuraWindow(aura::client::WINDOW_TYPE_MENU);
+  }
   // Use transparent background color for the popup in order to avoid flashing
   // the white background on popup open when dark color-scheme is used.
   SetContentBackgroundColor(SK_ColorTRANSPARENT);
@@ -461,7 +465,7 @@ void RenderWidgetHostViewAura::InitAsPopup(
   // in a system modal dialog. Do this before calling ParentWindowWithContext
   // below so that the transient parent is visible to WindowTreeClient.
   // This fixes crbug.com/328593.
-  if (transient_window_client) {
+  if (transient_window_client && widget_type_ != WidgetType::kUnboundedPanel) {
     transient_window_client->AddTransientChild(
         popup_parent_host_view_->window_, window_);
   }
@@ -1152,7 +1156,7 @@ RenderWidgetHostViewAura::GetParentNativeViewAccessible() {
   // If a popup_parent_host_view_ exists, that means we are in a popup (such as
   // datetime) and our accessible parent window is popup_parent_host_view_
   if (popup_parent_host_view_) {
-    CHECK_EQ(widget_type_, WidgetType::kPopup);
+    CHECK(widget_type_ == WidgetType::kPopup || widget_type_ == WidgetType::kUnboundedPanel);
     return popup_parent_host_view_->GetParentNativeViewAccessible();
   }
 

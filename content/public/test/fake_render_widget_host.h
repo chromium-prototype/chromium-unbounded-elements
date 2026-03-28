@@ -89,6 +89,7 @@ class FakeRenderWidgetHost : public blink::mojom::FrameWidgetHost,
   void SetPopupBounds(const gfx::Rect& bounds,
                       SetPopupBoundsCallback callback) override;
   void SetPopupCapture(bool capture) override;
+  void SetIsUnboundedPanel() override {}
 
   // blink::mojom::WidgetInputHandlerHost overrides.
   void SetTouchActionFromMain(cc::TouchAction touch_action) override;

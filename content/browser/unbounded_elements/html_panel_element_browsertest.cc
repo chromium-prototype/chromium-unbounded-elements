@@ -843,4 +843,52 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, VisibilityStateHidesPanel) {
   EXPECT_TRUE(observer.destroyed_) << "Secondary RenderWidgetHost was not destroyed on hide!";
 }
 
+IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, UnboundedPanelZOrder) {
+  ASSERT_TRUE(embedded_test_server()->Start());
+
+  GURL test_url(
+      "data:text/html,<!DOCTYPE html>"
+      "<body>"
+      "<panel open id='my_panel' style='position: fixed; inset: 0; margin: 0; padding: 0; border: none; width: 200px; height: 200px; background: white;'>"
+      "</panel>"
+      "</body>");
+
+  auto* contents = static_cast<WebContentsImpl*>(shell()->web_contents());
+
+  EXPECT_TRUE(NavigateToURL(shell(), test_url));
+  WaitForLoadStop(contents);
+
+  RenderFrameHostImpl* root_frame_host =
+      contents->GetPrimaryFrameTree().root()->current_frame_host();
+
+  // Find the popup RenderWidgetHost
+  RenderProcessHost* process = root_frame_host->GetProcess();
+  RenderWidgetHostImpl* popup_widget_host = nullptr;
+  std::unique_ptr<RenderWidgetHostIterator> widgets(
+      RenderWidgetHost::GetRenderWidgetHosts());
+  while (RenderWidgetHost* widget = widgets->GetNextHost()) {
+    if (widget->GetProcess()->GetID() == process->GetID() &&
+        widget != root_frame_host->GetRenderWidgetHost()) {
+      popup_widget_host = static_cast<RenderWidgetHostImpl*>(widget);
+      break;
+    }
+  }
+
+  ASSERT_TRUE(popup_widget_host) << "Secondary RenderWidgetHost was not created!";
+
+  popup_widget_host->WasShown(blink::mojom::RecordContentToVisibleTimeRequestPtr());
+
+  auto eval_result = EvalJs(root_frame_host, "new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));");
+
+  RenderWidgetHostViewBase* popup_view = popup_widget_host->GetView();
+  ASSERT_TRUE(popup_view);
+  EXPECT_EQ(popup_view->GetWidgetType(), WidgetType::kUnboundedPanel);
+
+#if defined(USE_AURA)
+  aura::Window* native_window = popup_view->GetNativeView();
+  ASSERT_TRUE(native_window);
+  EXPECT_EQ(native_window->GetType(), aura::client::WINDOW_TYPE_NORMAL);
+#endif
+}
+
 }  // namespace content

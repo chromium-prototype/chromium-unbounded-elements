@@ -4133,4 +4133,10 @@ void RenderWidgetHostImpl::SetPopupCapture(bool capture) {
     view_->SetNeedsMouseCapture(capture);
   }
 }
+
+void RenderWidgetHostImpl::SetIsUnboundedPanel() {
+  if (view_) {
+    view_->SetWidgetType(WidgetType::kUnboundedPanel);
+  }
+}
 }  // namespace content

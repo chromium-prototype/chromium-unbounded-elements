@@ -118,6 +118,7 @@ void UnboundedPanelWidget::Initialize() {
     widget_base_->LayerTreeHost()->StopDeferringCommits(cc::PaintHoldingCommitTrigger::kWidgetSwapped);
   }
 
+  popup_widget_host_->SetIsUnboundedPanel();
   popup_widget_host_->SetPopupCapture(owner_element_->FastHasAttribute(html_names::kCaptureAttr));
   popup_widget_host_->ShowPopup(
       gfx::Rect(0, 0, 1, 1), gfx::Rect(0, 0, 1, 1),
