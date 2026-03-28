@@ -72,8 +72,16 @@
   - [ ] Inject the translated event into the main document's `EventHandler` to fire DOM events (e.g., `click`).
 
 ## Current Status
-- **Fixed IPC Segfaults & FrameSink Loops**: `WidgetBase::RequestNewLayerTreeFrameSink` was previously looping infinitely due to invalid `LocalSurfaceId` allocation before IPC acknowledgement. Attempting to completely defer `InitializeCompositing` caused a secondary crash where `blink::WidgetBase::GetWidgetInputHandler()` segfaulted because `RenderInputRouterClient` couldn't access an uninitialized widget base upon receiving IPCs. 
-- **The Native Fix**: We adopted `WebPagePopupImpl`'s lifecycle model. `InitializeCompositing` is run synchronously upon element initialization, but `widget_base_->SetCompositorVisible(true)` is strictly deferred inside the `OnShowPopupAcknowledged` lambda. This natively resolves both the input crash and the frame routing infinite loop.
+- **Fixed IPC Segfaults & FrameSink Loops**: `WidgetBase::RequestNewLayerTreeFrameSink` was previously looping infinitely due to invalid `LocalSurfaceId` allocation before IPC acknowledgement. We initially tried to defer `InitializeCompositing`, which caused an input handler crash. Now, we correctly initialize compositing upfront but defer visibility in `OnShowPopupAcknowledged`.
+- **Browser-Side Widget Destruction**: We discovered that the test was failing and logging `CreateFrameSink called` infinitely because the browser process (`WebContentsImpl::ShowCreatedWidget`) was dropping the requested widget because `blink::features::kBlockSelectPopupUnfocusedWindow` was true, and the test's virtual window was not explicitly active.
+- **The Native Fix**: We adopted `WebPagePopupImpl`'s lifecycle model and disabled `kBlockSelectPopupUnfocusedWindow` in our browser test environment to allow headless window creation. The widget initialization handshake completes cleanly, logging NO errors, and the new widget successfully receives its FrameSink!
+- **Coordinate Translation**: Implemented a completely safe coordinate mathematical translation inside the `cc` engine. By hooking into `PaintArtifactCompositor` outputs and dynamically modifying `offset_to_transform_parent` of the resulting `cc::Layer`s, we map absolute layout bounds directly to the secondary `WidgetBase` OS popup window `[0,0]` origin without causing DCHECKS or compositor fatal crashes.
+- **Headless Unbounded Verification**: We introduced a sophisticated native X11 pipeline (`Xvfb` + `fluxbox` + `ImageMagick`) wrapped by Puppeteer to natively guarantee that Unbounded Panel elements safely spawn, paint, scale, and render their contents entirely out of the bounds of the host browser window constraints. 
+  - **Test HTML**: `third_party/blink/web_tests/unbounded-elements/panel-paint-sophisticated.html`
+  - **Puppeteer Script**: `run_sophisticated_test.cjs` (Executes the browser and captures the X11 screen)
+  - **Execution Wrapper**: `run_sophisticated_test_wrapper.sh`
+  - **How to Run**: Simply execute `./run_sophisticated_test_wrapper.sh` in the root repository. The script orchestrates `Xvfb` and `fluxbox`, generates `sophisticated_test_result.png`, and automatically tears down the display server upon termination.
+
 - **Next steps**:
   - The `HTMLPanelElementBrowserTest.WindowBoundsSync` assertion currently fails (returns 100x150 dimensions instead of 50x75 logic layout dimensions). This proves the bounds update works without hanging, but `new_bounds` needs Device Scale Factor translation applied before coordinate comparisons.
-
+  - Plumb UI events correctly from the new surface back into the main document.
