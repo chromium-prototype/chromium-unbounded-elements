@@ -144,6 +144,21 @@ void UnboundedPanelWidget::SetNeedsCommit() {
   }
 }
 
+void UnboundedPanelWidget::SynchronizeBounds() {
+  if (!owner_element_) return;
+  auto* layout_object = owner_element_->GetLayoutObject();
+  if (!layout_object) return;
+  auto* panel_layout = To<LayoutBox>(layout_object);
+
+  gfx::Rect absolute_rect = panel_layout->AbsoluteBoundingBoxRect();
+  gfx::Rect frame_rect = owner_element_->GetDocument().View()->DocumentToFrame(absolute_rect);
+  gfx::Rect screen_rect = owner_element_->GetDocument().View()->FrameToScreen(frame_rect);
+
+  if (popup_widget_host_.is_bound()) {
+    popup_widget_host_->SetPopupBounds(screen_rect, BindOnce([]() {}));
+  }
+}
+
 void UnboundedPanelWidget::WidgetHostDisconnected() {
   Destroy();
 }

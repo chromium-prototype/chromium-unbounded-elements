@@ -4925,19 +4925,41 @@ void WebFrameWidgetImpl::UpdateViewportDescription(
 bool WebFrameWidgetImpl::UpdateScreenRects(
     const gfx::Rect& widget_screen_rect,
     const gfx::Rect& window_screen_rect) {
+  bool changed = widget_base_->WindowScreenRect().origin() !=
+                 window_screen_rect.origin();
+  bool handled = false;
+
   if (device_emulator_ && widget_base_ && !widget_base_->WillBeDestroyed()) {
     device_emulator_->OnUpdateScreenRects(widget_screen_rect,
                                           window_screen_rect);
+    handled = true;
   }
 
   // Check movement from the committed `WindowScreenRect()`, not `WindowRect()`,
   // which may include pending updates from renderer-initiated moveTo|By calls.
-  if (widget_base_->WindowScreenRect().origin() !=
-      window_screen_rect.origin()) {
+  if (changed) {
     EnqueueMoveEvent();
   }
 
-  return device_emulator_ != nullptr;
+  // Update screen rects explicitly so we can use them synchronously
+  // before we return, preventing visual jitter during movement.
+  if (!handled && widget_base_) {
+    widget_base_->SetScreenRects(widget_screen_rect, window_screen_rect);
+    handled = true;
+  }
+
+  // Synchronize unbound panel OS windows synchronously with the main window bounds
+  if (changed && local_root_ && local_root_->GetFrame()) {
+    if (Document* document = local_root_->GetFrame()->GetDocument()) {
+      for (const auto& panel : document->UnboundedPanels()) {
+        if (auto* widget = panel->GetWidget()) {
+          widget->SynchronizeBounds();
+        }
+      }
+    }
+  }
+
+  return handled;
 }
 
 void WebFrameWidgetImpl::EnqueueMoveEvent() {

@@ -45,6 +45,7 @@ class CORE_EXPORT UnboundedPanelWidget final
   void Initialize();
   void Destroy();
   void SetNeedsCommit();
+  void SynchronizeBounds();
 
   // WidgetBaseClient overrides:
   void BeginMainFrame(const viz::BeginFrameArgs& args) override;
