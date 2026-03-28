@@ -8,6 +8,7 @@
 ] interface HTMLPanelElement : HTMLElement {
     [CEReactions, Reflect] attribute boolean open;
     [CEReactions, Reflect="dismiss-on-blur"] attribute boolean dismissOnBlur;
+    [CEReactions, Reflect] attribute boolean capture;
     [CEReactions] void show();
     [CEReactions] void close();
 };

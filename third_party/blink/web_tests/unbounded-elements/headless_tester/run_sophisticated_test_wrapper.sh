@@ -9,7 +9,7 @@ FLUX_PID=$!
 sleep 2
 
 export NODE_PATH=/usr/local/google/home/kerenzhu/code/chromium-unbounded-elements/src/third_party/devtools-frontend/src/node_modules
-third_party/node/linux/node-linux-x64/bin/node run_sophisticated_test.cjs 
+third_party/node/linux/node-linux-x64/bin/node third_party/blink/web_tests/unbounded-elements/headless_tester/run_sophisticated_test.cjs 
 
 kill $FLUX_PID
 kill $XVFB_PID

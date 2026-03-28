@@ -381,6 +381,7 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
   // a popup (such as a <select> dropdown), then shows the popup at |pos| using
   // |anchor_rect|. See OwnedWindowAnchor in //ui/base/ui_base_types.h for more
   // details.
+  virtual void SetNeedsMouseCapture(bool capture) {}
   virtual void InitAsPopup(RenderWidgetHostView* parent_host_view,
                            const gfx::Rect& bounds,
                            const gfx::Rect& anchor_rect) = 0;

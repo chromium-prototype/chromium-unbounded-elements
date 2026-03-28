@@ -9,7 +9,7 @@
 #include "third_party/blink/renderer/core/html/unbounded_panel_widget.h"
 #include "third_party/blink/renderer/core/html_names.h"
 #include "third_party/blink/renderer/core/layout/layout_unbounded_panel.h"
-#include "third_party/blink/renderer/core/events/event.h"
+#include "third_party/blink/renderer/core/dom/events/event.h"
 
 namespace blink {
 
@@ -70,4 +70,13 @@ void HTMLPanelElement::Trace(Visitor* visitor) const {
   HTMLElement::Trace(visitor);
 }
 
+
+void HTMLPanelElement::AttributeChanged(const AttributeModificationParams& params) {
+  if (params.name == html_names::kCaptureAttr) {
+    if (widget_) {
+      widget_->SetNeedsMouseCapture(FastHasAttribute(html_names::kCaptureAttr));
+    }
+  }
+  HTMLElement::AttributeChanged(params);
+}
 }  // namespace blink

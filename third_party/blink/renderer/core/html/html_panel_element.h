@@ -27,6 +27,7 @@ class CORE_EXPORT HTMLPanelElement : public HTMLElement {
   void show();
   void close();
 
+  void AttributeChanged(const AttributeModificationParams& params) override;
   void DefaultEventHandler(Event&) override;
 
   UnboundedPanelWidget* GetWidgetForTesting() const { return widget_.Get(); }

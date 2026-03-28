@@ -73,10 +73,10 @@
 - [x] **Capture & Outside Click Management API**:
   - [x] Introduce a notification mechanism (e.g., a DOM event like `outsideclick`) dispatched to the `<panel>` when it loses focus.
   - [x] Support a declarative "dismiss-on-blur" attribute/behavior for simple use cases that don't require sophisticated JS control.
-  - [ ] Implement an opt-in API (HTML attribute or JS property) for `<panel>` to request pointer capture (similar to OS-level menus), as not all panels need to trap focus/outside clicks.
+  - [x] Implement an opt-in API (HTML attribute `capture`) for <panel> to request pointers (similar to OS-level menus), as not all panels need to trap focus/outside clicks.
 
 ## Milestone 5: Windowing & UX Polish
-- [ ] **Positioning Offset Issue**: When `top: 0` and `left: 0` are set, the panel appears near the center of the parent page rather than the top-left corner. We need to audit `LocalFrameView::FrameToScreen()` and how OS-level window placement offsets are being calculated.
+- [x] **Positioning Offset Issue**: Fixed. Added DocumentToFrame() and verified CSS behavior.
 - [ ] **DevTools Overlay Mapping**: When hovering over panel elements in DevTools, the inspector overlay highlights the physical region inside the parent document. Coordinate translation must be plumbed into the DevTools overlay renderer.
 - [ ] **Window Drag Synchronization**: When dragging the main browser window, the popup position does not update natively and lags until a mouse-over forces a layout update. We should likely register the popup as a transient child (e.g. `XSetTransientForHint` on X11) or explicitly pipe synchronous `OnHostMovedInPixels` move IPCs.
 - [ ] **Z-Order Independence**: The popup behaves as an "always-on-top" window and obscures other independent OS applications (like the terminal). We need to decouple the widget from standard `WidgetType::kPopup` top-most Z-order logic so it interleaves normally.

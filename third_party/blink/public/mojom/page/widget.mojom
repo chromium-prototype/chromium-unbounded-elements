@@ -253,4 +253,7 @@ interface PopupWidgetHost {
 
   // Request that the browser change the bounds of the widget.
   SetPopupBounds(gfx.mojom.Rect bounds) => ();
+ 
+  // Set whether the popup should trap OS-level mouse capture.
+  SetPopupCapture(bool capture);
 };

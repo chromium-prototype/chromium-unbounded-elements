@@ -10,6 +10,7 @@
 #include "third_party/blink/renderer/core/frame/local_frame.h"
 #include "third_party/blink/renderer/core/frame/local_frame_client.h"
 #include "third_party/blink/renderer/core/frame/local_frame_view.h"
+#include "third_party/blink/renderer/core/html_names.h"
 #include "third_party/blink/renderer/core/html/html_panel_element.h"
 #include "third_party/blink/renderer/core/paint/paint_layer_painter.h"
 #include "third_party/blink/renderer/platform/graphics/graphics_context.h"
@@ -116,6 +117,7 @@ void UnboundedPanelWidget::Initialize() {
     widget_base_->LayerTreeHost()->StopDeferringCommits(cc::PaintHoldingCommitTrigger::kWidgetSwapped);
   }
 
+  popup_widget_host_->SetPopupCapture(owner_element_->FastHasAttribute(html_names::kCaptureAttr));
   popup_widget_host_->ShowPopup(
       gfx::Rect(0, 0, 1, 1), gfx::Rect(0, 0, 1, 1),
       BindOnce([](UnboundedPanelWidget* widget) {
@@ -198,7 +200,8 @@ void UnboundedPanelWidget::UpdateLifecycle(WebLifecycleUpdate requested_update, 
   const PaintArtifact& artifact = paint_controller.CommitNewDisplayItems();
 
   gfx::Rect absolute_rect = panel_layout->AbsoluteBoundingBoxRect();
-  gfx::Rect screen_rect = owner_element_->GetDocument().View()->FrameToScreen(absolute_rect);
+  gfx::Rect frame_rect = owner_element_->GetDocument().View()->DocumentToFrame(absolute_rect);
+  gfx::Rect screen_rect = owner_element_->GetDocument().View()->FrameToScreen(frame_rect);
   int initial_width = screen_rect.width();
   int initial_height = screen_rect.height();
 
@@ -210,6 +213,7 @@ void UnboundedPanelWidget::UpdateLifecycle(WebLifecycleUpdate requested_update, 
 
   auto* root = paint_artifact_compositor_->RootLayer();
   root->SetBounds(gfx::Size(initial_width, initial_height));
+  popup_widget_host_->SetPopupCapture(owner_element_->FastHasAttribute(html_names::kCaptureAttr));
   popup_widget_host_->SetPopupBounds(
       screen_rect,
       BindOnce([]() {}));
@@ -362,4 +366,10 @@ KURL UnboundedPanelWidget::GetURLForDebugTrace() {
   return KURL();
 }
 
+
+void UnboundedPanelWidget::SetNeedsMouseCapture(bool capture) {
+  if (popup_widget_host_.is_bound()) {
+    popup_widget_host_->SetPopupCapture(capture);
+  }
+}
 }  // namespace blink

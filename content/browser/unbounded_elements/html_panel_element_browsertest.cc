@@ -1,8 +1,10 @@
+#include "ui/aura/window.h"
+#include "base/threading/platform_thread.h"
+#include "base/run_loop.h"
 // Copyright 2026 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "base/run_loop.h"
 #include "base/test/bind.h"
 #include "base/task/single_thread_task_runner.h"
 #include "cc/test/pixel_test_utils.h"
@@ -597,4 +599,84 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, DismissOnBlurBehavior) {
   
   EXPECT_FALSE(is_open) << "Panel failed to dismiss on blur!";
 }
+
+IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, MouseCaptureStateSync) {
+  EXPECT_TRUE(NavigateToURL(
+      shell(),
+      GURL("data:text/html,<!DOCTYPE html><html><body></body></html>")));
+
+
+  WebContentsImpl* contents = static_cast<WebContentsImpl*>(shell()->web_contents());
+  WaitForLoadStop(contents);
+
+  RenderFrameHostImpl* root_frame_host =
+      contents->GetPrimaryFrameTree().root()->current_frame_host();
+
+  // Create panel WITH capture attribute initially
+  EXPECT_TRUE(ExecJs(root_frame_host,
+                     "document.body.innerHTML = `" 
+                     "<panel open id=\"capture_panel\" capture style=\"position: fixed; width: 10px; height: 10px;\"></panel>`;"));
+
+  // Find the popup RenderWidgetHost
+  RenderProcessHost* process = root_frame_host->GetProcess();
+  RenderWidgetHostImpl* popup_widget_host = nullptr;
+  while (!popup_widget_host) {
+    base::RunLoop run_loop;
+    base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(
+        FROM_HERE, run_loop.QuitClosure(), base::Milliseconds(50));
+    run_loop.Run();
+    std::unique_ptr<RenderWidgetHostIterator> widgets(
+        RenderWidgetHost::GetRenderWidgetHosts());
+    while (RenderWidgetHost* widget = widgets->GetNextHost()) {
+      if (widget->GetProcess()->GetID() == process->GetID() &&
+          widget != root_frame_host->GetRenderWidgetHost()) {
+        popup_widget_host = static_cast<RenderWidgetHostImpl*>(widget);
+        break;
+      }
+    }
+  }
+
+  ASSERT_TRUE(popup_widget_host);
+
+
+
+  RenderWidgetHostView* popup_view = nullptr;
+  while (!popup_view || !popup_view->GetNativeView()) {
+    base::RunLoop run_loop;
+    base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(
+        FROM_HERE, run_loop.QuitClosure(), base::Milliseconds(50));
+    run_loop.Run();
+    popup_view = popup_widget_host->GetView();
+  }
+
+  
+  // Verify initial state
+  EXPECT_TRUE(popup_view->GetNativeView()->HasCapture());
+
+  // Dynamically remove attribute
+  EXPECT_TRUE(ExecJs(root_frame_host,
+                     "document.getElementById('capture_panel').removeAttribute('capture');"));
+
+  // Verify dynamic update removed capture
+  // We need to wait for IPC to arrive (RenderWidgetHostImpl::SetPopupCapture is synchronous locally once it arrives).
+  // We can just use base::RunLoop().RunUntilIdle() to flush the Mojo pipe since both are on the UI thread.
+  auto wait_capture = [&](bool expected) {
+    while (popup_view->GetNativeView()->HasCapture() != expected) {
+      base::RunLoop().RunUntilIdle();
+      base::PlatformThread::Sleep(base::Milliseconds(10));
+    }
+  };
+  
+  wait_capture(false);
+  EXPECT_FALSE(popup_view->GetNativeView()->HasCapture());
+
+  
+  // Dynamically add attribute
+  EXPECT_TRUE(ExecJs(root_frame_host,
+                     "document.getElementById('capture_panel').setAttribute('capture', '');"));
+  
+  wait_capture(true);
+  EXPECT_TRUE(popup_view->GetNativeView()->HasCapture());
+}
+
 }  // namespace content

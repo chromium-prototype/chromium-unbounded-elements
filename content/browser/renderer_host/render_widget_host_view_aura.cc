@@ -3551,4 +3551,14 @@ void RenderWidgetHostViewAura::ForwardArabicIndicCharEventWithLatencyInfo(
 }
 #endif  // BUILDFLAG(IS_WIN)
 
+
+
+void RenderWidgetHostViewAura::SetNeedsMouseCapture(bool capture) {
+  if (!window_) return;
+  if (capture) {
+    window_->SetCapture();
+  } else {
+    window_->ReleaseCapture();
+  }
+}
 }  // namespace content

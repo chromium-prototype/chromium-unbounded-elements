@@ -4126,4 +4126,11 @@ void RenderWidgetHostImpl::CompositorMetricRecorder::TryToRecordMetrics() {
   }
 }
 
+
+
+void RenderWidgetHostImpl::SetPopupCapture(bool capture) {
+  if (view_) {
+    view_->SetNeedsMouseCapture(capture);
+  }
+}
 }  // namespace content

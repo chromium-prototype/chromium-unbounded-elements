@@ -71,6 +71,7 @@ class CORE_EXPORT UnboundedPanelWidget final
 
 
   bool HasDisplayItemsForTesting() const;
+  void SetNeedsMouseCapture(bool capture);
 
  private:
   void WidgetHostDisconnected();
