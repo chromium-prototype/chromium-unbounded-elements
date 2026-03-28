@@ -35,6 +35,12 @@
 #include "content/public/browser/render_widget_host_iterator.h"
 #include "content/public/browser/render_widget_host_view.h"
 
+#include "ui/gfx/codec/png_codec.h"
+#include "base/files/file_util.h"
+#include "base/run_loop.h"
+#include "base/threading/thread_restrictions.h"
+#include "third_party/skia/include/core/SkBitmap.h"
+#include "components/viz/common/frame_sinks/copy_output_result.h"
 namespace {
 
 // Observes TabStripModelChange::kRemoved notifications and records the
@@ -196,12 +202,32 @@ IN_PROC_BROWSER_TEST_F(WebUiNtpBrowserTest, PanelWidgetShows) {
       EXPECT_TRUE(view);
       if (view) {
         EXPECT_TRUE(view->IsShowing());
+        
+        base::RunLoop run_loop;
+        view->CopyFromSurface(
+            gfx::Rect(), gfx::Size(),
+            base::BindOnce(
+                [](base::OnceClosure quit,
+                   const content::CopyFromSurfaceResult& result) {
+                  if (result.has_value()) {
+                    base::ScopedAllowBlockingForTesting allow_blocking;
+                    std::vector<unsigned char> data;
+                    if (gfx::PNGCodec::EncodeBGRASkBitmap(result.value().bitmap,
+                                                          false, &data)) {
+                      base::WriteFile(base::FilePath("popup_raw_pixels.png"), data);
+                    }
+                  }
+                  std::move(quit).Run();
+                },
+                run_loop.QuitClosure()));
+        run_loop.Run();
       }
     }
   }
 
   EXPECT_GT(popup_count, 0) << "No secondary RenderWidgetHost was created for the panel!";
 }
+
 
 // Verify that the WebUI NTP uses an available spare process and does not
 // discard it as in https://crbug.com/1094088.
