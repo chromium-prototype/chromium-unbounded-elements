@@ -460,4 +460,73 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, FocusAndActivationRouting) {
   EXPECT_TRUE(has_focus) << "The document does not believe it has focus after clicking the panel!";
 }
 
+IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, OutsideClickEvent) {
+  ASSERT_TRUE(embedded_test_server()->Start());
+
+  GURL test_url(
+      "data:text/html,<!DOCTYPE html>"
+      "<body>"
+      "<panel id='my_panel' style='position: fixed; inset: 0; margin: 0; padding: 0; border: none; width: 200px; height: 200px; background: white;'>"
+      "</panel>"
+      "<script>"
+      "  window.outsideClicks = 0;"
+      "  document.getElementById('my_panel').addEventListener('outsideclick', () => {"
+      "    window.outsideClicks++;"
+      "  });"
+      "</script>"
+      "</body>");
+
+  auto* contents = static_cast<WebContentsImpl*>(shell()->web_contents());
+
+  EXPECT_TRUE(NavigateToURL(shell(), test_url));
+  WaitForLoadStop(contents);
+
+  RenderFrameHostImpl* root_frame_host =
+      contents->GetPrimaryFrameTree().root()->current_frame_host();
+
+  // Find the popup RenderWidgetHost
+  RenderProcessHost* process = root_frame_host->GetProcess();
+  RenderWidgetHostImpl* popup_widget_host = nullptr;
+  std::unique_ptr<RenderWidgetHostIterator> widgets(
+      RenderWidgetHost::GetRenderWidgetHosts());
+  while (RenderWidgetHost* widget = widgets->GetNextHost()) {
+    if (widget->GetProcess()->GetID() == process->GetID() &&
+        widget != root_frame_host->GetRenderWidgetHost()) {
+      popup_widget_host = static_cast<RenderWidgetHostImpl*>(widget);
+      break;
+    }
+  }
+
+  ASSERT_TRUE(popup_widget_host) << "Secondary RenderWidgetHost was not created!";
+
+  popup_widget_host->WasShown(blink::mojom::RecordContentToVisibleTimeRequestPtr());
+
+  auto eval_result = EvalJs(root_frame_host, "new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));");
+
+  // Trigger focus loss (which should trigger outsideclick event).
+  popup_widget_host->GetWidgetInputHandler()->SetFocus(blink::mojom::FocusState::kNotFocusedAndNotActive);
+  
+  // Yield for Mojo run loop
+  {
+    base::RunLoop run_loop;
+    base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(
+        FROM_HERE, run_loop.QuitClosure(), base::Milliseconds(100));
+    run_loop.Run();
+  }
+
+  int retries = 0;
+  int clicks = 0;
+  while (retries < 50) {
+    clicks = EvalJs(root_frame_host, "window.outsideClicks").ExtractInt();
+    if (clicks > 0) break;
+    base::RunLoop run_loop;
+    base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(
+        FROM_HERE, run_loop.QuitClosure(), base::Milliseconds(50));
+    run_loop.Run();
+    retries++;
+  }
+  
+  EXPECT_EQ(clicks, 1);
+}
+
 }  // namespace content

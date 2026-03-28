@@ -43,7 +43,8 @@
 #include "third_party/blink/public/common/input/web_mouse_event.h"
 #include "third_party/blink/public/common/input/web_pointer_event.h"
 #include "third_party/blink/public/common/input/web_touch_event.h"
-
+#include "third_party/blink/renderer/core/dom/events/event.h"
+#include "third_party/blink/renderer/platform/wtf/text/atomic_string.h"
 
 namespace blink {
 
@@ -321,6 +322,10 @@ void UnboundedPanelWidget::FocusChanged(mojom::blink::FocusState focus_state) {
   }
   if (is_focused) {
     page->GetFocusController().SetFocused(true);
+  } else if (!is_active) {
+    // If the widget is neither focused nor active, it means the user clicked outside
+    // the OS window (either on the main browser window or another application).
+    owner_element_->DispatchEvent(*Event::Create(AtomicString("outsideclick")));
   }
 }
 

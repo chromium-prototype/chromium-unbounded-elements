@@ -71,9 +71,9 @@
   - [x] Apply the inverse layout translation to hit-testing coordinates so physical window dimensions map into the logical layout coordinates of the main document.
   - [x] Inject the translated event into the main document's `EventHandler` to fire DOM events (e.g., `click`).
 - [ ] **Capture & Outside Click Management API**:
-  - [ ] Implement an opt-in API (HTML attribute or JS property) for `<panel>` to request pointer capture (similar to OS-level menus), as not all panels need to trap focus/outside clicks.
-  - [ ] Introduce a notification mechanism (e.g., a DOM event like `outsideclick`) dispatched to the `<panel>` allowing JS to decide whether to dismiss the panel or ignore the click.
+  - [x] Introduce a notification mechanism (e.g., a DOM event like `outsideclick`) dispatched to the `<panel>` when it loses focus.
   - [ ] Support a declarative "dismiss-on-blur" attribute/behavior for simple use cases that don't require sophisticated JS control.
+  - [ ] Implement an opt-in API (HTML attribute or JS property) for `<panel>` to request pointer capture (similar to OS-level menus), as not all panels need to trap focus/outside clicks.
 
 ## Milestone 5: Windowing & UX Polish
 - [ ] **Positioning Offset Issue**: When `top: 0` and `left: 0` are set, the panel appears near the center of the parent page rather than the top-left corner. We need to audit `LocalFrameView::FrameToScreen()` and how OS-level window placement offsets are being calculated.
