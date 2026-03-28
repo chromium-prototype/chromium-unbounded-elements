@@ -34,6 +34,10 @@
 #include "third_party/blink/renderer/core/paint/paint_info.h"
 #include "third_party/blink/renderer/core/paint/object_painter.h"
 #include "base/no_destructor.h"
+#include "third_party/blink/renderer/platform/graphics/paint/transform_paint_property_node.h"
+#include "third_party/blink/renderer/platform/graphics/paint/clip_paint_property_node.h"
+#include "ui/gfx/geometry/transform.h"
+
 
 namespace blink {
 
@@ -108,7 +112,6 @@ void UnboundedPanelWidget::Initialize() {
   popup_widget_host_->ShowPopup(
       gfx::Rect(0, 0, 1, 1), gfx::Rect(0, 0, 1, 1),
       BindOnce([](UnboundedPanelWidget* widget) {
-        LOG(ERROR) << "UnboundedPanelWidget::OnShowPopupAcknowledged BEGIN via lambda";
         if (!widget || !widget->widget_base_) return;
         widget->widget_base_->SetCompositorVisible(true);
       }, WrapWeakPersistent(this)));
@@ -117,6 +120,7 @@ void UnboundedPanelWidget::Initialize() {
 
 void UnboundedPanelWidget::Destroy() {
   if (widget_base_) {
+    widget_base_->Shutdown(false);
     widget_base_.reset();
   }
 }
@@ -139,51 +143,37 @@ void UnboundedPanelWidget::UpdateLifecycle(WebLifecycleUpdate requested_update, 
     return;
   }
 
-  LOG(ERROR) << "UpdateLifecycle BEGIN. layer_tree_host_viewport=" 
-             << widget_base_->LayerTreeHost()->device_viewport_rect().ToString()
-             << " is_visible=" << widget_base_->LayerTreeHost()->IsVisible();
-
   if (!widget_base_ || !widget_base_->LayerTreeHost()) {
-    LOG(ERROR) << "UpdateLifecycle: No widget_base_ or LayerTreeHost";
     return;
   }
   if (!paint_artifact_compositor_) {
-    LOG(ERROR) << "UpdateLifecycle: No paint_artifact_compositor_";
     return;
   }
   
   auto* layout_object = owner_element_->GetLayoutObject();
   if (!layout_object) {
-    LOG(ERROR) << "UpdateLifecycle: No layout_object";
     return;
   }
   
   if (!layout_object->FirstFragment().HasLocalBorderBoxProperties()) {
-    LOG(ERROR) << "UpdateLifecycle: No LocalBorderBoxProperties";
     return;
   }
   
-  LOG(ERROR) << "UpdateLifecycle: HasLocalBorderBoxProperties TRUE. Setting needs commit";
-
   // Continuously request commits while waiting for the main frame to be clean.
   widget_base_->LayerTreeHost()->SetNeedsCommit();
 
   auto& document = owner_element_->GetDocument();
   if (document.NeedsLayoutTreeUpdate() || document.Lifecycle().GetState() < DocumentLifecycle::kPrePaintClean) {
-    LOG(ERROR) << "UpdateLifecycle: Forcing main document update";
     if (document.View()) {
       document.View()->UpdateAllLifecyclePhases(DocumentUpdateReason::kUnknown);
     } else {
-      LOG(ERROR) << "UpdateLifecycle: No document view!";
       return;
     }
   }
 
   if (document.Lifecycle().GetState() < DocumentLifecycle::kPrePaintClean) {
-    LOG(ERROR) << "UpdateLifecycle: Document failed to reach PrePaintClean!";
     return;
   }
-  LOG(ERROR) << "UpdateLifecycle: Document is PrePaintClean!";
 
   if (!layout_object)
     return;
@@ -200,16 +190,16 @@ void UnboundedPanelWidget::UpdateLifecycle(WebLifecycleUpdate requested_update, 
 
   const PaintArtifact& artifact = paint_controller.CommitNewDisplayItems();
 
+  gfx::Rect absolute_rect = panel_layout->AbsoluteBoundingBoxRect();
+  gfx::Rect screen_rect = owner_element_->GetDocument().View()->FrameToScreen(absolute_rect);
+  int initial_width = screen_rect.width();
+  int initial_height = screen_rect.height();
+
   PaintArtifactCompositor::ViewportProperties viewport_properties;
   viewport_properties.page_scale = &TransformPaintPropertyNode::Root();
   viewport_properties.inner_scroll_translation = &TransformPaintPropertyNode::Root();
   viewport_properties.outer_clip = &ClipPaintPropertyNode::Root();
   viewport_properties.outer_scroll_translation = &TransformPaintPropertyNode::Root();
-
-  gfx::Rect absolute_rect = panel_layout->AbsoluteBoundingBoxRect();
-  gfx::Rect screen_rect = owner_element_->GetDocument().View()->FrameToScreen(absolute_rect);
-  int initial_width = screen_rect.width();
-  int initial_height = screen_rect.height();
 
   auto* root = paint_artifact_compositor_->RootLayer();
   root->SetBounds(gfx::Size(initial_width, initial_height));
@@ -223,6 +213,12 @@ void UnboundedPanelWidget::UpdateLifecycle(WebLifecycleUpdate requested_update, 
       viewport_properties,
       {}, {});
 
+  for (auto& child : root->children()) {
+    child->SetOffsetToTransformParent(
+        child->offset_to_transform_parent() -
+        gfx::Vector2dF(absolute_rect.x(), absolute_rect.y()));
+  }
+
   if (widget_base_->LayerTreeHost()->IsVisible()) {
     widget_base_->LayerTreeHost()->SetNeedsCommit();
   }
@@ -230,7 +226,6 @@ void UnboundedPanelWidget::UpdateLifecycle(WebLifecycleUpdate requested_update, 
 
 std::unique_ptr<cc::LayerTreeFrameSink>
 UnboundedPanelWidget::AllocateNewLayerTreeFrameSink() {
-  LOG(ERROR) << "UnboundedPanelWidget::AllocateNewLayerTreeFrameSink BEGIN";
   return nullptr;
 }
 WebInputEventResult UnboundedPanelWidget::DispatchBufferedTouchEvents() {
@@ -254,7 +249,6 @@ void UnboundedPanelWidget::ObserveGestureEventAndResult(
 
 void UnboundedPanelWidget::UpdateVisualProperties(
     const VisualProperties& visual_properties) {
-  LOG(ERROR) << "UnboundedPanelWidget::UpdateVisualProperties BEGIN";
   if (widget_base_) {
     widget_base_->UpdateSurfaceAndScreenInfo(
         visual_properties.local_surface_id.value_or(viz::LocalSurfaceId()),

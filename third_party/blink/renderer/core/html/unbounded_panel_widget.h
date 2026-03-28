@@ -12,6 +12,7 @@
 #include "third_party/blink/renderer/core/core_export.h"
 #include "third_party/blink/renderer/platform/heap/garbage_collected.h"
 #include "third_party/blink/renderer/platform/heap/member.h"
+#include "third_party/blink/renderer/platform/heap/prefinalizer.h"
 #include "third_party/blink/renderer/platform/mojo/heap_mojo_associated_remote.h"
 #include "mojo/public/cpp/bindings/pending_associated_receiver.h"
 #include "third_party/blink/renderer/platform/graphics/paint/paint_controller.h"
@@ -86,6 +87,8 @@ class CORE_EXPORT UnboundedPanelWidget final
   [[maybe_unused]] mojo::PendingAssociatedReceiver<mojom::blink::Widget>
       widget_receiver_;
   bool has_shown_popup_ = false;
+
+  USING_PRE_FINALIZER(UnboundedPanelWidget, Destroy);
 };
 
 }  // namespace blink
