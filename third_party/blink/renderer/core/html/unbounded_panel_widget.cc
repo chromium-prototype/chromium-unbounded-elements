@@ -37,6 +37,11 @@
 #include "third_party/blink/renderer/platform/graphics/paint/transform_paint_property_node.h"
 #include "third_party/blink/renderer/platform/graphics/paint/clip_paint_property_node.h"
 #include "ui/gfx/geometry/transform.h"
+#include "third_party/blink/renderer/core/frame/web_frame_widget_impl.h"
+#include "third_party/blink/renderer/core/layout/layout_box.h"
+#include "third_party/blink/public/common/input/web_mouse_event.h"
+#include "third_party/blink/public/common/input/web_pointer_event.h"
+#include "third_party/blink/public/common/input/web_touch_event.h"
 
 
 namespace blink {
@@ -232,7 +237,44 @@ WebInputEventResult UnboundedPanelWidget::DispatchBufferedTouchEvents() {
   return WebInputEventResult::kNotHandled;
 }
 WebInputEventResult UnboundedPanelWidget::HandleInputEvent(
-    const WebCoalescedInputEvent&) {
+    const WebCoalescedInputEvent& coalesced_event) {
+  if (!owner_element_) return WebInputEventResult::kNotHandled;
+  Document& document = owner_element_->GetDocument();
+  LocalFrame* frame = document.GetFrame();
+  if (!frame) return WebInputEventResult::kNotHandled;
+
+  auto* layout_object = owner_element_->GetLayoutObject();
+  if (!layout_object) return WebInputEventResult::kNotHandled;
+
+  auto* panel_layout = To<LayoutBox>(layout_object);
+  gfx::Rect absolute_rect = panel_layout->AbsoluteBoundingBoxRect();
+  gfx::PointF offset(absolute_rect.x(), absolute_rect.y());
+
+  WebCoalescedInputEvent translated_coalesced(coalesced_event);
+  WebInputEvent* mutable_event = translated_coalesced.EventPointer();
+
+  if (WebInputEvent::IsMouseEventType(mutable_event->GetType())) {
+    WebMouseEvent* mouse_event = static_cast<WebMouseEvent*>(mutable_event);
+    mouse_event->SetPositionInWidget(mouse_event->PositionInWidget().x() + offset.x(),
+                                     mouse_event->PositionInWidget().y() + offset.y());
+  } else if (WebInputEvent::IsPointerEventType(mutable_event->GetType())) {
+    WebPointerEvent* pointer_event = static_cast<WebPointerEvent*>(mutable_event);
+    pointer_event->SetPositionInWidget(pointer_event->PositionInWidget().x() + offset.x(),
+                                       pointer_event->PositionInWidget().y() + offset.y());
+  } else if (WebInputEvent::IsTouchEventType(mutable_event->GetType())) {
+    WebTouchEvent* touch_event = static_cast<WebTouchEvent*>(mutable_event);
+    for (unsigned i = 0; i < touch_event->touches_length; ++i) {
+      touch_event->touches[i].SetPositionInWidget(
+          touch_event->touches[i].PositionInWidget().x() + offset.x(),
+          touch_event->touches[i].PositionInWidget().y() + offset.y());
+    }
+  }
+
+  if (auto* frame_widget = frame->LocalFrameRoot().GetWidgetForLocalRoot()) {
+    auto* main_widget = static_cast<WebFrameWidgetImpl*>(frame_widget);
+    return main_widget->HandleInputEvent(translated_coalesced);
+  }
+
   return WebInputEventResult::kNotHandled;
 }
 bool UnboundedPanelWidget::SupportsBufferedTouchEvents() {

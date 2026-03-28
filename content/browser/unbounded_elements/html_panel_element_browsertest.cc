@@ -297,4 +297,88 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, WindowBoundsSync) {
   EXPECT_EQ(new_bounds.y() - initial_bounds.y(), 75);
 }
 
+IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, InputEventRouting) {
+  ASSERT_TRUE(embedded_test_server()->Start());
+
+  GURL test_url(
+      "data:text/html,<!DOCTYPE html>"
+      "<body>"
+      "<panel id='my_panel' style='position: fixed; inset: 0; margin: 0; padding: 0; border: none; width: 100px; height: 100px; background: white;'>"
+      "</panel>"
+      "<script>"
+      "  window.clicks = 0;"
+      "  document.getElementById('my_panel').addEventListener('mousedown', (e) => {"
+      "    console.log('MOUSEDOWN in panel at ', e.clientX, e.clientY);"
+      "    window.clicks++;"
+      "  });"
+      "</script>"
+      "</body>");
+
+  auto* contents = static_cast<WebContentsImpl*>(shell()->web_contents());
+
+  EXPECT_TRUE(NavigateToURL(shell(), test_url));
+  WaitForLoadStop(contents);
+
+  RenderFrameHostImpl* root_frame_host =
+      contents->GetPrimaryFrameTree().root()->current_frame_host();
+
+  // Find the popup RenderWidgetHost
+  RenderProcessHost* process = root_frame_host->GetProcess();
+  RenderWidgetHostImpl* popup_widget_host = nullptr;
+  std::unique_ptr<RenderWidgetHostIterator> widgets(
+      RenderWidgetHost::GetRenderWidgetHosts());
+  while (RenderWidgetHost* widget = widgets->GetNextHost()) {
+    if (widget->GetProcess()->GetID() == process->GetID() &&
+        widget != root_frame_host->GetRenderWidgetHost()) {
+      popup_widget_host = static_cast<RenderWidgetHostImpl*>(widget);
+      break;
+    }
+  }
+
+  ASSERT_TRUE(popup_widget_host) << "Secondary RenderWidgetHost was not created!";
+  RenderWidgetHostViewBase* popup_view = popup_widget_host->GetView();
+  ASSERT_TRUE(popup_view) << "Popup did not create a RenderWidgetHostView!";
+
+  popup_widget_host->WasShown(blink::mojom::RecordContentToVisibleTimeRequestPtr());
+
+  // Wait a bit for layout / mojo
+  base::RunLoop initial_run_loop;
+  base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(
+      FROM_HERE, initial_run_loop.QuitClosure(), base::Milliseconds(100));
+  initial_run_loop.Run();
+
+  // Change CSS bounds and position
+  EXPECT_TRUE(ExecJs(root_frame_host, "document.getElementById('my_panel').style.left = '50px'; "
+                                      "document.getElementById('my_panel').style.top = '75px';"));
+  
+  // Wait for layout updates
+  auto eval_result = EvalJs(root_frame_host, "new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));");
+
+  // Send a mouse down event into the secondary widget at local (10, 10)
+  blink::WebMouseEvent mouse_down(
+      blink::WebInputEvent::Type::kMouseDown,
+      blink::WebInputEvent::kNoModifiers,
+      base::TimeTicks::Now());
+  mouse_down.button = blink::WebPointerProperties::Button::kLeft;
+  mouse_down.click_count = 1;
+  mouse_down.SetPositionInWidget(10, 10);
+  mouse_down.SetPositionInScreen(60, 85); // 50 + 10, 75 + 10
+  popup_widget_host->ForwardMouseEvent(mouse_down);
+
+  blink::WebMouseEvent mouse_up(
+      blink::WebInputEvent::Type::kMouseUp,
+      blink::WebInputEvent::kNoModifiers,
+      base::TimeTicks::Now());
+  mouse_up.button = blink::WebPointerProperties::Button::kLeft;
+  mouse_up.click_count = 1;
+  mouse_up.SetPositionInWidget(10, 10);
+  mouse_up.SetPositionInScreen(60, 85);
+  popup_widget_host->ForwardMouseEvent(mouse_up);
+
+  // Read clicks using EvalJs
+  int clicks = EvalJs(root_frame_host, "window.clicks").ExtractInt();
+  // We expect the routing to have triggered the javascript event listener.
+  EXPECT_EQ(clicks, 1);
+}
+
 }  // namespace content

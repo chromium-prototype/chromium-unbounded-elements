@@ -59,9 +59,9 @@ Feed the DOM subtree's pixels into the secondary widget.
 
 ### Milestone 4: Event Routing & Input Hit Testing
 Route raw input events (mouse, keyboard) from the secondary OS window back to the main document's DOM.
-*   Intercept input events in `UnboundedPanelWidget`.
-*   Translate physical window coordinates back to the logical layout coordinates of the main document.
-*   Inject the event into the main document's `EventHandler`, constraining the hit-testing algorithm to *only* consider nodes within the `LayoutUnboundedPanel` subtree.
+*   **Event Interception**: Intercept input events in `UnboundedPanelWidget::HandleInputEvent`.
+*   **Coordinate Translation**: Translate the `WebCoalescedInputEvent` coordinates by shifting the `PositionInWidget` using the logical absolute layout bounds of the panel (`AbsoluteBoundingBoxRect()`).
+*   **Event Injection**: Pass the translated event seamlessly back into the `WebFrameWidgetImpl::HandleInputEvent` of the parent frame, enabling the existing DOM hit-testing and event dispatch subsystems to naturally invoke standard UI event listeners without creating a separate hit testing path.
 
 ### Milestone 5: Synchronization and Lifecycle Tying
 Coordinate the `BeginMainFrame` lifecycle between the two windows.

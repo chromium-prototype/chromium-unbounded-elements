@@ -66,10 +66,10 @@
   - [x] Implement Window Positioning by calling `LocalFrameView::FrameToScreen()` on the element's layout rect, translating its logical coordinates into absolute OS screen dimensions before pushing the Mojo `SetBounds` IPC.
 
 ## Milestone 4: Event Routing & Input Hit Testing
-- [ ] **Event Interception & Translation**:
-  - [ ] Implement `UnboundedPanelWidget::HandleInputEvent` to intercept UI events (mouse, touch, keyboard).
-  - [ ] Apply the inverse layout translation to hit-testing coordinates so physical window dimensions map into the logical layout coordinates of the main document.
-  - [ ] Inject the translated event into the main document's `EventHandler` to fire DOM events (e.g., `click`).
+- [x] **Event Interception & Translation**:
+  - [x] Implement `UnboundedPanelWidget::HandleInputEvent` to intercept UI events (mouse, touch, keyboard).
+  - [x] Apply the inverse layout translation to hit-testing coordinates so physical window dimensions map into the logical layout coordinates of the main document.
+  - [x] Inject the translated event into the main document's `EventHandler` to fire DOM events (e.g., `click`).
 - [ ] **Capture & Outside Click Management API**:
   - [ ] Implement an opt-in API (HTML attribute or JS property) for `<panel>` to request pointer capture (similar to OS-level menus), as not all panels need to trap focus/outside clicks.
   - [ ] Introduce a notification mechanism (e.g., a DOM event like `outsideclick`) dispatched to the `<panel>` allowing JS to decide whether to dismiss the panel or ignore the click.
@@ -80,7 +80,9 @@
 - [ ] **DevTools Overlay Mapping**: When hovering over panel elements in DevTools, the inspector overlay highlights the physical region inside the parent document. Coordinate translation must be plumbed into the DevTools overlay renderer.
 - [ ] **Window Drag Synchronization**: When dragging the main browser window, the popup position does not update natively and lags until a mouse-over forces a layout update. We should likely register the popup as a transient child (e.g. `XSetTransientForHint` on X11) or explicitly pipe synchronous `OnHostMovedInPixels` move IPCs.
 - [ ] **Z-Order Independence**: The popup behaves as an "always-on-top" window and obscures other independent OS applications (like the terminal). We need to decouple the widget from standard `WidgetType::kPopup` top-most Z-order logic so it interleaves normally.
-
+- **Cursor Mapping**: The mouse cursor does not change state when hovering over interactive elements (e.g., `<input>`, text selection). We need to plumb cursor change requests from the main `WebFrameWidgetImpl` back to the secondary widget's `WidgetBase` so the OS receives the updated cursor shape.
+- **Focus, Activation, and IME**: Clicking an `<input>` element correctly selects text but does not focus it, and the blinking caret does not appear. We need to investigate Chromium's focus transfer logic to ensure the secondary window correctly signals `Activation` to the main window's node, properly establishing focus state for IME input.
+- **Page Visibility & Tab Switching**: Sub-widgets remain visible on the OS desktop even when the parent tab is backgrounded or switched. We must tie the unbounded `<panel>`'s lifecycle directly to the host `WebContents` visibility state to hide it when the user switches tabs.
 ## Current Status
 - **Fixed IPC Segfaults & FrameSink Loops**: `WidgetBase::RequestNewLayerTreeFrameSink` was previously looping infinitely due to invalid `LocalSurfaceId` allocation before IPC acknowledgement. We initially tried to defer `InitializeCompositing`, which caused an input handler crash. Now, we correctly initialize compositing upfront but defer visibility in `OnShowPopupAcknowledged`.
 - **Browser-Side Widget Destruction**: We discovered that the test was failing and logging `CreateFrameSink called` infinitely because the browser process (`WebContentsImpl::ShowCreatedWidget`) was dropping the requested widget because `blink::features::kBlockSelectPopupUnfocusedWindow` was true, and the test's virtual window was not explicitly active.
@@ -93,5 +95,7 @@
   - **How to Run**: Simply execute `./run_sophisticated_test_wrapper.sh` in the root repository. The script orchestrates `Xvfb` and `fluxbox`, generates `sophisticated_test_result.png`, and automatically tears down the display server upon termination.
 - **Bounds Synchronization and High DPI (DSF)**: Addressed flakiness in the `HTMLPanelElementBrowserTest.WindowBoundsSync` test when scaling. The test loop was exiting prematurely upon receiving an unscaled transient coordinate from `DesktopWindowTreeHostX11`'s asynchronous `ConfigureNotify`. By adapting the test explicitly to wait for the proper logical scaled bounds instead of generic "bounds changed" condition, tests perfectly pass and correctly synchronize logical CSS coordinates up to physical screen coordinates.
 
+- **Input Event Routing**: Successfully plumbed UI events from the secondary widget back into the main document's event handler. Using `WebCoalescedInputEvent` translation, mouse and touch events coordinates are geometrically shifted by the absolute layout box offsets of the panel. These modified events are directly injected into `WebFrameWidgetImpl::HandleInputEvent` of the parent frame, seamlessly hooking directly into the DOM event dispatch pipeline (`click`, `mousedown`, `mousemove`). A new integration test `HTMLPanelElementBrowserTest.InputEventRouting` proves this.
+
 - **Next steps**:
-  - Plumb UI events correctly from the new surface back into the main document.
+  - Implement Capture & Outside Click Management API to handle popups that lose focus or trap pointers.
