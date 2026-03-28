@@ -101,4 +101,5 @@
 - **Cursor Mapping**: Fixed cursor handling by modifying `WebFrameWidgetImpl::DidChangeCursor` to broadcast local cursor changes to all `UnboundedPanels()` registered in the Document. This ensures that when the mouse enters interactive bounds within the `<panel>` widget, the secondary OS window receives the proper `SetCursor` updates.
 
 - **Next steps**:
-  - Implement Capture & Outside Click Management API to handle popups that lose focus or trap pointers.
+  - Implement Page Visibility & Tab Switching: hide Unbounded panels when the browser tab is backgrounded.
+  - Implement Window Drag Synchronization to fix lag during main window drags.
