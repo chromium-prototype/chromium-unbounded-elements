@@ -31,7 +31,7 @@ class HTMLPanelElementBrowserTest : public ContentBrowserTest {
   ~HTMLPanelElementBrowserTest() override = default;
 
   void SetUp() override {
-    EnablePixelOutput();
+    EnablePixelOutput(2.0f);
     ContentBrowserTest::SetUp();
   }
 };
@@ -280,8 +280,9 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, WindowBoundsSync) {
   auto eval_result = EvalJs(root_frame_host, "new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));");
 
   int retries = 0;
+  gfx::Point expected_origin(initial_bounds.x() + 50, initial_bounds.y() + 75);
   while ((popup_view->GetViewBounds().size() != gfx::Size(300, 150) ||
-          popup_view->GetViewBounds().origin() == initial_bounds.origin()) && retries < 50) {
+          popup_view->GetViewBounds().origin() != expected_origin) && retries < 50) {
     base::RunLoop run_loop;
     base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(
         FROM_HERE, run_loop.QuitClosure(), base::Milliseconds(50));
