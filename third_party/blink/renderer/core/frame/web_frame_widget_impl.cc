@@ -1711,6 +1711,13 @@ void WebFrameWidgetImpl::UpdateLifecycle(WebLifecycleUpdate requested_update,
     return;
 
   View()->UpdatePagePopup();
+  if (Document* document = LocalRootImpl()->GetFrame()->GetDocument()) {
+    for (const auto& panel : document->UnboundedPanels()) {
+      if (auto* widget = panel->GetWidget()) {
+        widget->SetNeedsCommit();
+      }
+    }
+  }
 
   // Meaningful layout events and background colors only apply to main frames.
   if (ForMainFrame()) {

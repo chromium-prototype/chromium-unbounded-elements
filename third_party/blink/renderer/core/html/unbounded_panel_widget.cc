@@ -205,8 +205,8 @@ void UnboundedPanelWidget::UpdateLifecycle(WebLifecycleUpdate requested_update, 
   gfx::Rect absolute_rect = panel_layout->AbsoluteBoundingBoxRect();
   gfx::Rect frame_rect = owner_element_->GetDocument().View()->DocumentToFrame(absolute_rect);
   gfx::Rect screen_rect = owner_element_->GetDocument().View()->FrameToScreen(frame_rect);
-  int initial_width = screen_rect.width();
-  int initial_height = screen_rect.height();
+  int physical_width = absolute_rect.width();
+  int physical_height = absolute_rect.height();
 
   PaintArtifactCompositor::ViewportProperties viewport_properties;
   viewport_properties.page_scale = &TransformPaintPropertyNode::Root();
@@ -215,7 +215,7 @@ void UnboundedPanelWidget::UpdateLifecycle(WebLifecycleUpdate requested_update, 
   viewport_properties.outer_scroll_translation = &TransformPaintPropertyNode::Root();
 
   auto* root = paint_artifact_compositor_->RootLayer();
-  root->SetBounds(gfx::Size(initial_width, initial_height));
+  root->SetBounds(gfx::Size(physical_width, physical_height));
   popup_widget_host_->SetPopupCapture(owner_element_->FastHasAttribute(html_names::kCaptureAttr));
   popup_widget_host_->SetPopupBounds(
       screen_rect,

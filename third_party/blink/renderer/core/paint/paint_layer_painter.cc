@@ -371,6 +371,9 @@ PaintResult PaintLayerPainter::Paint(GraphicsContext& context,
   } else {
     gfx::Rect visual_rect = FirstFragmentVisualRect(object);
     gfx::Rect cull_rect = object.FirstFragment().GetCullRect().Rect();
+    if (paint_flags & PaintFlag::kPaintingUnboundedPanel) {
+      cull_rect = CullRect::Infinite().Rect();
+    }
     bool cull_rect_intersects_self = cull_rect.Intersects(visual_rect);
     if (!cull_rect.Contains(visual_rect))
       result = kMayBeClippedByCullRect;
@@ -381,6 +384,9 @@ PaintResult PaintLayerPainter::Paint(GraphicsContext& context,
           ContentsVisualRect(object.FirstFragment(), *box));
       PhysicalRect contents_cull_rect(
           object.FirstFragment().GetContentsCullRect().Rect());
+      if (paint_flags & PaintFlag::kPaintingUnboundedPanel) {
+        contents_cull_rect = PhysicalRect(CullRect::Infinite().Rect());
+      }
       cull_rect_intersects_contents =
           contents_cull_rect.Intersects(contents_visual_rect);
       if (!contents_cull_rect.Contains(contents_visual_rect))
@@ -693,6 +699,9 @@ void PaintLayerPainter::PaintFragmentWithPhase(
          phase == PaintPhase::kOverlayOverflowControls);
 
   CullRect cull_rect = fragment_data.GetCullRect();
+  if (paint_flags & PaintFlag::kPaintingUnboundedPanel) {
+    cull_rect = CullRect::Infinite();
+  }
   if (cull_rect.Rect().IsEmpty())
     return;
 

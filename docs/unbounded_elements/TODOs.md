@@ -103,7 +103,7 @@
 - **Next steps**:
   - [x] Implement Page Visibility & Tab Switching: hide Unbounded panels when the browser tab is backgrounded.
   - [ ] Implement Window Drag Synchronization to fix lag during main window drags.
-  - [ ] Fix popup DSF at 2x screen scaling: at 2x scale, the popup appears to use a 2x larger DSF than the browser window, doubling the font size, and text selection breaks (likely due to incorrect event coordinate translation).
-  - [ ] Fix text selection cursor: when mousedown and moving to select text, the cursor changes from a caret to a normal icon. It should remain a caret.
-  - [ ] Fix rendering issue in `panel-paint-sophisticated.html`: adding an `<input>` next to a `<p>` makes the `<p>` invisible until its text is selected.
-  - [ ] Fix caret in `<input>`: when the `<input>` is focused, it accepts keyboard input but there is no blinking caret cursor.
+  - [x] Fix popup DSF at 2x screen scaling: fixed by using physical pixels (`absolute_rect`) in `UnboundedPanelWidget::UpdateLifecycle` for the root layer bounds instead of logical DIPs, normalizing the cc::Layer scale multiplier correctly against `device_scale_factor`.
+  - [x] Fix text selection cursor: when mousedown and moving to select text, the incorrect hit-test resulting from the bad 2x visual artifact was completely bypassing the `SelectCursor` text node hit evaluation. Fixing the DSF bounds also correctly resynced hit-testing coordinates symmetrically, meaning the I-beam caret is explicitly mapped during standard text selections.
+  - [x] Fix rendering issue in `panel-paint-sophisticated.html`: bypassed `CullRect` limits internally in `paint_layer_painter.cc` when encountering the special `PaintFlag::kPaintingUnboundedPanel`. Since main document frames tightly clip `CullRect` inside the main window area, unbounded panels existing partially outside the viewport were failing to paint their non-layered children (e.g., `<p>`).
+  - [x] Fix caret in `<input>`: hooked `UnboundedPanelWidget::SetNeedsCommit()` into the end of `WebFrameWidgetImpl::UpdateLifecycle()`. This enables the `Page`'s caret blink timer invalidations to transparently pass down to the secondary composited OS window popup correctly.
