@@ -70,6 +70,10 @@
   - [ ] Implement `UnboundedPanelWidget::HandleInputEvent` to intercept UI events (mouse, touch, keyboard).
   - [ ] Apply the inverse layout translation to hit-testing coordinates so physical window dimensions map into the logical layout coordinates of the main document.
   - [ ] Inject the translated event into the main document's `EventHandler` to fire DOM events (e.g., `click`).
+- [ ] **Capture & Outside Click Management API**:
+  - [ ] Implement an opt-in API (HTML attribute or JS property) for `<panel>` to request pointer capture (similar to OS-level menus), as not all panels need to trap focus/outside clicks.
+  - [ ] Introduce a notification mechanism (e.g., a DOM event like `outsideclick`) dispatched to the `<panel>` allowing JS to decide whether to dismiss the panel or ignore the click.
+  - [ ] Support a declarative "dismiss-on-blur" attribute/behavior for simple use cases that don't require sophisticated JS control.
 
 ## Current Status
 - **Fixed IPC Segfaults & FrameSink Loops**: `WidgetBase::RequestNewLayerTreeFrameSink` was previously looping infinitely due to invalid `LocalSurfaceId` allocation before IPC acknowledgement. We initially tried to defer `InitializeCompositing`, which caused an input handler crash. Now, we correctly initialize compositing upfront but defer visibility in `OnShowPopupAcknowledged`.

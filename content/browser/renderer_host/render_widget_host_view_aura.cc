@@ -3024,11 +3024,7 @@ bool RenderWidgetHostViewAura::NeedsInputGrab() {
 }
 
 bool RenderWidgetHostViewAura::NeedsMouseCapture() {
-#if BUILDFLAG(IS_LINUX)
-  return NeedsInputGrab();
-#else
   return false;
-#endif
 }
 
 void RenderWidgetHostViewAura::SetTooltipsEnabled(bool enable) {
