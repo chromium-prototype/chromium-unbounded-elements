@@ -24,6 +24,7 @@
 #include "mojo/public/cpp/test_support/test_utils.h"
 #include "content/public/test/browser_test_utils.h"
 #include "components/viz/common/frame_sinks/copy_output_result.h"
+#include "content/public/browser/render_widget_host_observer.h"
 #include "third_party/skia/include/core/SkColor.h"
 namespace content {
 
@@ -677,6 +678,85 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, MouseCaptureStateSync) {
   
   wait_capture(true);
   EXPECT_TRUE(popup_view->GetNativeView()->HasCapture());
+}
+
+class WidgetDestroyedObserver : public RenderWidgetHostObserver {
+ public:
+  explicit WidgetDestroyedObserver(RenderWidgetHost* host) : host_(host) {
+    host_->AddObserver(this);
+  }
+  ~WidgetDestroyedObserver() override {
+    if (host_) host_->RemoveObserver(this);
+  }
+  void RenderWidgetHostDestroyed(RenderWidgetHost* host) override {
+    host_->RemoveObserver(this);
+    host_ = nullptr;
+    destroyed_ = true;
+    if (run_loop_) run_loop_->Quit();
+  }
+  void Wait() {
+    if (destroyed_) return;
+    run_loop_ = std::make_unique<base::RunLoop>();
+    run_loop_->Run();
+  }
+  
+  bool destroyed_ = false;
+ private:
+  raw_ptr<RenderWidgetHost> host_;
+  std::unique_ptr<base::RunLoop> run_loop_;
+};
+
+IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, VisibilityStateHidesPanel) {
+  ASSERT_TRUE(embedded_test_server()->Start());
+
+  GURL test_url(
+      "data:text/html,<!DOCTYPE html>"
+      "<body>"
+      "<panel open id='my_panel' style='position: fixed; inset: 0; margin: 0; padding: 0; border: none; width: 200px; height: 200px; background: white;'>"
+      "</panel>"
+      "</body>");
+
+  auto* contents = static_cast<WebContentsImpl*>(shell()->web_contents());
+
+  EXPECT_TRUE(NavigateToURL(shell(), test_url));
+  WaitForLoadStop(contents);
+
+  RenderFrameHostImpl* root_frame_host =
+      contents->GetPrimaryFrameTree().root()->current_frame_host();
+
+  // Find the popup RenderWidgetHost
+  auto get_popup_widget = [&]() -> RenderWidgetHostImpl* {
+    RenderProcessHost* process = root_frame_host->GetProcess();
+    std::unique_ptr<RenderWidgetHostIterator> widgets(
+        RenderWidgetHost::GetRenderWidgetHosts());
+    while (RenderWidgetHost* widget = widgets->GetNextHost()) {
+      if (widget->GetProcess()->GetID() == process->GetID() &&
+          widget != root_frame_host->GetRenderWidgetHost()) {
+        return static_cast<RenderWidgetHostImpl*>(widget);
+      }
+    }
+    return nullptr;
+  };
+
+  RenderWidgetHostImpl* popup_widget_host = nullptr;
+  while (!(popup_widget_host = get_popup_widget())) {
+    base::RunLoop run_loop;
+    base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(
+        FROM_HERE, run_loop.QuitClosure(), base::Milliseconds(50));
+    run_loop.Run();
+  }
+
+  ASSERT_TRUE(popup_widget_host) << "Secondary RenderWidgetHost was not created!";
+
+  WidgetDestroyedObserver observer(popup_widget_host);
+
+  // Hide the WebContents
+  contents->WasHidden();
+
+  // It should be destroyed by IPC processing
+  observer.Wait();
+
+  EXPECT_TRUE(observer.destroyed_) << "Secondary RenderWidgetHost was not destroyed on hide!";
 }
 
 }  // namespace content

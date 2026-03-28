@@ -10,11 +10,13 @@
 #include "third_party/blink/renderer/core/html_names.h"
 #include "third_party/blink/renderer/core/layout/layout_unbounded_panel.h"
 #include "third_party/blink/renderer/core/dom/events/event.h"
+#include "third_party/blink/renderer/core/page/page.h"
 
 namespace blink {
 
 HTMLPanelElement::HTMLPanelElement(Document& document)
-    : HTMLElement(html_names::kPanelTag, document) {}
+    : HTMLElement(html_names::kPanelTag, document),
+      PageVisibilityObserver(document.GetPage()) {}
 
 LayoutObject* HTMLPanelElement::CreateLayoutObject(const ComputedStyle&) {
   return MakeGarbageCollected<LayoutUnboundedPanel>(this);
@@ -27,12 +29,28 @@ Node::InsertionNotificationRequest HTMLPanelElement::InsertedInto(
 
   if (insertion_point.isConnected()) {
     GetDocument().UnboundedPanels().insert(this);
-    if (!widget_) {
+    if (!widget_ && GetPage() && GetPage()->IsPageVisible()) {
       widget_ = MakeGarbageCollected<UnboundedPanelWidget>(this);
       widget_->Initialize();
     }
   }
   return request;
+}
+
+void HTMLPanelElement::PageVisibilityChanged() {
+  if (!GetPage()) return;
+  
+  if (GetPage()->IsPageVisible()) {
+    if (isConnected() && !widget_) {
+      widget_ = MakeGarbageCollected<UnboundedPanelWidget>(this);
+      widget_->Initialize();
+    }
+  } else {
+    if (widget_) {
+      widget_->Destroy();
+      widget_ = nullptr;
+    }
+  }
 }
 
 void HTMLPanelElement::RemovedFrom(ContainerNode& insertion_point) {
@@ -68,6 +86,7 @@ void HTMLPanelElement::DefaultEventHandler(Event& event) {
 void HTMLPanelElement::Trace(Visitor* visitor) const {
   visitor->Trace(widget_);
   HTMLElement::Trace(visitor);
+  PageVisibilityObserver::Trace(visitor);
 }
 
 

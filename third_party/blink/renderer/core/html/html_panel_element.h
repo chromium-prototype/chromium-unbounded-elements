@@ -7,12 +7,13 @@
 
 #include "third_party/blink/renderer/core/core_export.h"
 #include "third_party/blink/renderer/core/html/html_element.h"
+#include "third_party/blink/renderer/core/page/page_visibility_observer.h"
 
 namespace blink {
 
 class UnboundedPanelWidget;
 
-class CORE_EXPORT HTMLPanelElement : public HTMLElement {
+class CORE_EXPORT HTMLPanelElement : public HTMLElement, public PageVisibilityObserver {
   DEFINE_WRAPPERTYPEINFO();
 
  public:
@@ -32,6 +33,9 @@ class CORE_EXPORT HTMLPanelElement : public HTMLElement {
 
   UnboundedPanelWidget* GetWidgetForTesting() const { return widget_.Get(); }
   UnboundedPanelWidget* GetWidget() const { return widget_.Get(); }
+
+  // PageVisibilityObserver
+  void PageVisibilityChanged() override;
 
   void Trace(Visitor* visitor) const override;
 

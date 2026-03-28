@@ -128,6 +128,9 @@ void UnboundedPanelWidget::Initialize() {
 }
 
 void UnboundedPanelWidget::Destroy() {
+  if (popup_widget_host_.is_bound()) {
+    popup_widget_host_->RequestClosePopup();
+  }
   if (widget_base_) {
     widget_base_->Shutdown(false);
     widget_base_.reset();

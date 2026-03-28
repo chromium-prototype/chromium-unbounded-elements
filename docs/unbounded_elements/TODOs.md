@@ -82,7 +82,7 @@
 - [ ] **Z-Order Independence**: The popup behaves as an "always-on-top" window and obscures other independent OS applications (like the terminal). We need to decouple the widget from standard `WidgetType::kPopup` top-most Z-order logic so it interleaves normally.
 - [x] **Cursor Mapping**: Fixed. The mouse cursor does not change state when hovering over interactive elements (e.g., `<input>`, text selection). We need to plumb cursor change requests from the main `WebFrameWidgetImpl` back to the secondary widget's `WidgetBase` so the OS receives the updated cursor shape.
 - [x] **Focus, Activation, and IME**: Clicking an `<input>` element correctly selects text but does not focus it, and the blinking caret does not appear. We need to investigate Chromium's focus transfer logic to ensure the secondary window correctly signals `Activation` to the main window's node, properly establishing focus state for IME input.
-- [ ] **Page Visibility & Tab Switching**: Sub-widgets remain visible on the OS desktop even when the parent tab is backgrounded or switched. We must tie the unbounded `<panel>`'s lifecycle directly to the host `WebContents` visibility state to hide it when the user switches tabs.
+- [x] **Page Visibility & Tab Switching**: Sub-widgets remain visible on the OS desktop even when the parent tab is backgrounded or switched. We must tie the unbounded `<panel>`'s lifecycle directly to the host `WebContents` visibility state to hide it when the user switches tabs.
 ## Current Status
 - **Fixed IPC Segfaults & FrameSink Loops**: `WidgetBase::RequestNewLayerTreeFrameSink` was previously looping infinitely due to invalid `LocalSurfaceId` allocation before IPC acknowledgement. We initially tried to defer `InitializeCompositing`, which caused an input handler crash. Now, we correctly initialize compositing upfront but defer visibility in `OnShowPopupAcknowledged`.
 - **Browser-Side Widget Destruction**: We discovered that the test was failing and logging `CreateFrameSink called` infinitely because the browser process (`WebContentsImpl::ShowCreatedWidget`) was dropping the requested widget because `blink::features::kBlockSelectPopupUnfocusedWindow` was true, and the test's virtual window was not explicitly active.
@@ -101,5 +101,5 @@
 - **Cursor Mapping**: Fixed cursor handling by modifying `WebFrameWidgetImpl::DidChangeCursor` to broadcast local cursor changes to all `UnboundedPanels()` registered in the Document. This ensures that when the mouse enters interactive bounds within the `<panel>` widget, the secondary OS window receives the proper `SetCursor` updates.
 
 - **Next steps**:
-  - Implement Page Visibility & Tab Switching: hide Unbounded panels when the browser tab is backgrounded.
+  - [x] Implement Page Visibility & Tab Switching: hide Unbounded panels when the browser tab is backgrounded.
   - Implement Window Drag Synchronization to fix lag during main window drags.
