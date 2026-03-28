@@ -194,7 +194,7 @@ void UnboundedPanelWidget::UpdateLifecycle(WebLifecycleUpdate requested_update, 
   auto* panel_layout = To<LayoutBox>(layout_object);
 
   PaintController paint_controller(false, nullptr);
-  paint_controller.UpdateCurrentPaintChunkProperties(PropertyTreeState::Root());
+  paint_controller.UpdateCurrentPaintChunkProperties(layout_object->FirstFragment().LocalBorderBoxProperties());
 
   GraphicsContext context(paint_controller);
 
@@ -228,18 +228,16 @@ void UnboundedPanelWidget::UpdateLifecycle(WebLifecycleUpdate requested_update, 
       viewport_properties,
       {}, {});
 
+  for (auto layer_child : paint_artifact_compositor_->RootLayer()->children()) {
+    gfx::Vector2dF current_offset = layer_child->offset_to_transform_parent();
+    layer_child->SetOffsetToTransformParent(current_offset - gfx::Vector2dF(absolute_rect.x(), absolute_rect.y()));
+  }
+
   gfx::Rect device_viewport_rect(0, 0, physical_width, physical_height);
   widget_base_->LayerTreeHost()->SetViewportRectAndScale(
       device_viewport_rect,
       widget_base_->GetOriginalDeviceScaleFactor(),
       widget_base_->local_surface_id_from_parent());
-
-  if (auto* property_trees = widget_base_->LayerTreeHost()->property_trees()) {
-    if (auto* root_node = property_trees->transform_tree_mutable().Node(cc::kSecondaryRootPropertyNodeId)) {
-      root_node->local.Translate(-absolute_rect.x(), -absolute_rect.y());
-      property_trees->transform_tree_mutable().set_needs_update(true);
-    }
-  }
 
   if (widget_base_->LayerTreeHost()->IsVisible()) {
     widget_base_->LayerTreeHost()->SetNeedsCommit();

@@ -227,7 +227,7 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, RenderWidgetColorIsBlue) {
 }
 
 
-IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, DISABLED_PanelTextVisibleWithInput) {
+IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, PanelTextVisibleWithInput) {
   ASSERT_TRUE(embedded_test_server()->Start());
 
   GURL test_url(
