@@ -91,7 +91,7 @@
   - **Puppeteer Script**: `run_sophisticated_test.cjs` (Executes the browser and captures the X11 screen)
   - **Execution Wrapper**: `run_sophisticated_test_wrapper.sh`
   - **How to Run**: Simply execute `./run_sophisticated_test_wrapper.sh` in the root repository. The script orchestrates `Xvfb` and `fluxbox`, generates `sophisticated_test_result.png`, and automatically tears down the display server upon termination.
+- **Bounds Synchronization and High DPI (DSF)**: Addressed flakiness in the `HTMLPanelElementBrowserTest.WindowBoundsSync` test when scaling. The test loop was exiting prematurely upon receiving an unscaled transient coordinate from `DesktopWindowTreeHostX11`'s asynchronous `ConfigureNotify`. By adapting the test explicitly to wait for the proper logical scaled bounds instead of generic "bounds changed" condition, tests perfectly pass and correctly synchronize logical CSS coordinates up to physical screen coordinates.
 
 - **Next steps**:
-  - The `HTMLPanelElementBrowserTest.WindowBoundsSync` assertion currently fails (returns 100x150 dimensions instead of 50x75 logic layout dimensions). This proves the bounds update works without hanging, but `new_bounds` needs Device Scale Factor translation applied before coordinate comparisons.
   - Plumb UI events correctly from the new surface back into the main document.
