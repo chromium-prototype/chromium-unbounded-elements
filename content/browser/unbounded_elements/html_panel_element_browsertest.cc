@@ -226,6 +226,90 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, RenderWidgetColorIsBlue) {
   EXPECT_EQ(color, SK_ColorBLUE) << "Timed out waiting for the blue pixel in the secondary popup widget.";
 }
 
+
+IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, DISABLED_PanelTextVisibleWithInput) {
+  ASSERT_TRUE(embedded_test_server()->Start());
+
+  GURL test_url(
+      "data:text/html,<!DOCTYPE html>"
+      "<body style='margin:0;'>"
+      "<panel open id='my_panel' style='position: fixed; top: 400px; left: 400px; width: 200px; height: 300px; background: white; margin: 0; padding: 0; border: none;'>"
+      "  <input type='text' style='position: absolute; top: 0; left: 0; width: 50px; height: 50px; background: green; border: none;' />"
+      "   <p style='position: absolute; top: 10px; left: 100px; margin: 0; width: 50px; height: 50px; background: blue; color: transparent;'>Text!</p>"
+      "</panel>"
+      "</body>");
+
+  auto* contents = static_cast<WebContentsImpl*>(shell()->web_contents());
+  EXPECT_TRUE(NavigateToURL(shell(), test_url));
+  WaitForLoadStop(contents);
+
+  RenderFrameHostImpl* root_frame_host =
+      contents->GetPrimaryFrameTree().root()->current_frame_host();
+  
+  auto eval_result = EvalJs(root_frame_host, "new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));");
+
+  RenderProcessHost* process = root_frame_host->GetProcess();
+  RenderWidgetHostImpl* popup_widget_host = nullptr;
+  std::unique_ptr<RenderWidgetHostIterator> widgets(
+      RenderWidgetHost::GetRenderWidgetHosts());
+  while (RenderWidgetHost* widget = widgets->GetNextHost()) {
+    if (widget->GetProcess()->GetID() == process->GetID() &&
+        widget != root_frame_host->GetRenderWidgetHost()) {
+      popup_widget_host = static_cast<RenderWidgetHostImpl*>(widget);
+      break;
+    }
+  }
+
+  ASSERT_TRUE(popup_widget_host);
+  auto* popup_view = popup_widget_host->GetView();
+  ASSERT_TRUE(popup_view);
+  popup_widget_host->WasShown(blink::mojom::RecordContentToVisibleTimeRequestPtr());
+
+  bool has_green = false;
+  bool has_blue = false;
+
+  int retries = 0;
+  while (retries < 50) {
+    if (has_green && has_blue) break;
+    base::RunLoop copy_loop;
+    popup_view->CopyFromSurface(
+        gfx::Rect(), gfx::Size(), base::TimeDelta(),
+        base::BindOnce(
+            [](bool* has_green, bool* has_blue, base::OnceClosure quit_closure,
+               const content::CopyFromSurfaceResult& result) {
+              if (result.has_value()) {
+                const SkBitmap& bitmap = result->bitmap;
+                for (int y = 0; y < bitmap.height(); ++y) {
+                  for (int x = 0; x < bitmap.width(); ++x) {
+                    SkColor c = bitmap.getColor(x, y);
+                    // Match Skia green and blue values
+                    if (c == 0xFF008000 || c == SK_ColorGREEN) *has_green = true;
+                    if (c == 0xFF0000FF || c == SK_ColorBLUE) *has_blue = true;
+                  }
+                }
+              }
+              std::move(quit_closure).Run();
+            },
+            &has_green, &has_blue, copy_loop.QuitClosure()));
+    copy_loop.Run();
+    
+    if (has_green && has_blue) break;
+    retries++;
+    base::RunLoop wait_loop;
+    base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(
+        FROM_HERE, wait_loop.QuitClosure(), base::Milliseconds(50));
+    wait_loop.Run();
+  }
+
+  // TODO(crbug.com/NNNNNN): Elements positioned inside an UnboundedPanel 
+  // that do not have their own composited layer are currently not painted 
+  // correctly when the panel is positioned outside of `CullRect::Infinite()` 
+  // or has its offset translated. This includes both `<input>` and `<p>` tags 
+  // when the panel is at e.g. (400, 400).
+  EXPECT_TRUE(has_green) << "Input layer was not painted!";
+  EXPECT_TRUE(has_blue) << "P layer was not painted because of mapping bugs!";
+}
+
 IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, WindowBoundsSync) {
   ASSERT_TRUE(embedded_test_server()->Start());
 
