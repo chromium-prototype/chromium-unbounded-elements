@@ -263,6 +263,9 @@ class RenderWidgetHostViewAura::EventObserverForPopupExit
 
 void RenderWidgetHostViewAura::ApplyEventObserverForPopupExit(
     const ui::LocatedEvent& event) {
+  // Temporarily disabled to prevent UnboundedPanel from closing on outside click
+  return;
+  
   CHECK(event.type() == ui::EventType::kMousePressed ||
         event.type() == ui::EventType::kTouchPressed);
 
@@ -2716,8 +2719,9 @@ void RenderWidgetHostViewAura::OnWindowFocused(aura::Window* gained_focus,
   // Close the child popup window if we lose focus (e.g. due to a JS alert or
   // system modal dialog). This is particularly important if
   // |popup_child_host_view_| has mouse capture.
-  if (popup_child_host_view_)
-    popup_child_host_view_->Shutdown();
+  if (popup_child_host_view_) {
+    // popup_child_host_view_->Shutdown();
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2731,7 +2735,7 @@ void RenderWidgetHostViewAura::OnHostMovedInPixels(aura::WindowTreeHost* host) {
   // Close the child popup window if the browser window moves (e.g. due to
   // moving the window with the keyboard.)
   if (popup_child_host_view_) {
-    popup_child_host_view_->Shutdown();
+    // popup_child_host_view_->Shutdown();
   }
 }
 

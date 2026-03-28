@@ -75,6 +75,12 @@
   - [ ] Introduce a notification mechanism (e.g., a DOM event like `outsideclick`) dispatched to the `<panel>` allowing JS to decide whether to dismiss the panel or ignore the click.
   - [ ] Support a declarative "dismiss-on-blur" attribute/behavior for simple use cases that don't require sophisticated JS control.
 
+## Milestone 5: Windowing & UX Polish
+- [ ] **Positioning Offset Issue**: When `top: 0` and `left: 0` are set, the panel appears near the center of the parent page rather than the top-left corner. We need to audit `LocalFrameView::FrameToScreen()` and how OS-level window placement offsets are being calculated.
+- [ ] **DevTools Overlay Mapping**: When hovering over panel elements in DevTools, the inspector overlay highlights the physical region inside the parent document. Coordinate translation must be plumbed into the DevTools overlay renderer.
+- [ ] **Window Drag Synchronization**: When dragging the main browser window, the popup position does not update natively and lags until a mouse-over forces a layout update. We should likely register the popup as a transient child (e.g. `XSetTransientForHint` on X11) or explicitly pipe synchronous `OnHostMovedInPixels` move IPCs.
+- [ ] **Z-Order Independence**: The popup behaves as an "always-on-top" window and obscures other independent OS applications (like the terminal). We need to decouple the widget from standard `WidgetType::kPopup` top-most Z-order logic so it interleaves normally.
+
 ## Current Status
 - **Fixed IPC Segfaults & FrameSink Loops**: `WidgetBase::RequestNewLayerTreeFrameSink` was previously looping infinitely due to invalid `LocalSurfaceId` allocation before IPC acknowledgement. We initially tried to defer `InitializeCompositing`, which caused an input handler crash. Now, we correctly initialize compositing upfront but defer visibility in `OnShowPopupAcknowledged`.
 - **Browser-Side Widget Destruction**: We discovered that the test was failing and logging `CreateFrameSink called` infinitely because the browser process (`WebContentsImpl::ShowCreatedWidget`) was dropping the requested widget because `blink::features::kBlockSelectPopupUnfocusedWindow` was true, and the test's virtual window was not explicitly active.
