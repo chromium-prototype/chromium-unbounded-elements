@@ -1,0 +1,19 @@
+Unbounded Elements: Route Focus & Activation to Main Page
+
+Clicking an `<input>` element inside a `<panel>` widget correctly
+dispatched the click to the DOM EventHandler but previously did not
+establish focus. Unbounded window activation (via the OS window manager)
+suppresses the main WebContents from preserving standard Activation state,
+causing the caret to remain hidden and preventing KeyDown propagation.
+
+This patch fixes focus propagation by intercepting FocusChanged
+on the UnboundedPanelWidget and forcing the Page's FocusController
+back into an active/focused state. We similarly coerce the FocusController
+explicitly inside UnboundedPanelWidget::HandleInputEvent to handle clicks
+that natively activate the popup window.
+
+Added test coverage inside HTMLPanelElementBrowserTest.FocusAndActivationRouting
+to simulate OS-level window blurring and verify the document correctly
+returns `document.hasFocus()`.
+
+Bug: none

@@ -84,7 +84,7 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, RenderWidgetColorIsBlue) {
   GURL test_url(
       "data:text/html,<!DOCTYPE html>"
       "<body>"
-      "<panel id='my_panel' style='position: fixed; inset: 0; margin: 0; padding: 0; border: none; width: 100px; height: 100px; background: white;'>"
+      "<panel open id='my_panel' style='position: fixed; inset: 0; margin: 0; padding: 0; border: none; width: 100px; height: 100px; background: white;'>"
       "  <div style='width: 10px; height: 10px; background: blue;'></div>"
       "</panel>"
       "</body>");
@@ -229,7 +229,7 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, WindowBoundsSync) {
   GURL test_url(
       "data:text/html,<!DOCTYPE html>"
       "<body>"
-      "<panel id='my_panel' style='position: fixed; inset: 0; margin: 0; padding: 0; border: none; width: 100px; height: 100px; background: white;'>"
+      "<panel open id='my_panel' style='position: fixed; inset: 0; margin: 0; padding: 0; border: none; width: 100px; height: 100px; background: white;'>"
       "</panel>"
       "</body>");
 
@@ -303,7 +303,7 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, InputEventRouting) {
   GURL test_url(
       "data:text/html,<!DOCTYPE html>"
       "<body>"
-      "<panel id='my_panel' style='position: fixed; inset: 0; margin: 0; padding: 0; border: none; width: 100px; height: 100px; background: white;'>"
+      "<panel open id='my_panel' style='position: fixed; inset: 0; margin: 0; padding: 0; border: none; width: 100px; height: 100px; background: white;'>"
       "</panel>"
       "<script>"
       "  window.clicks = 0;"
@@ -387,7 +387,7 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, FocusAndActivationRouting) {
   GURL test_url(
       "data:text/html,<!DOCTYPE html>"
       "<body>"
-      "<panel id='my_panel' style='position: fixed; inset: 0; margin: 0; padding: 0; border: none; width: 200px; height: 200px; background: white;'>"
+      "<panel open id='my_panel' style='position: fixed; inset: 0; margin: 0; padding: 0; border: none; width: 200px; height: 200px; background: white;'>"
       "  <input id='my_input' type='text' style='position: absolute; left: 10px; top: 10px; width: 100px; height: 20px;' />"
       "</panel>"
       "</body>");
@@ -466,7 +466,7 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, OutsideClickEvent) {
   GURL test_url(
       "data:text/html,<!DOCTYPE html>"
       "<body>"
-      "<panel id='my_panel' style='position: fixed; inset: 0; margin: 0; padding: 0; border: none; width: 200px; height: 200px; background: white;'>"
+      "<panel open id='my_panel' style='position: fixed; inset: 0; margin: 0; padding: 0; border: none; width: 200px; height: 200px; background: white;'>"
       "</panel>"
       "<script>"
       "  window.outsideClicks = 0;"
@@ -529,4 +529,72 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, OutsideClickEvent) {
   EXPECT_EQ(clicks, 1);
 }
 
+
+IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, DismissOnBlurBehavior) {
+  ASSERT_TRUE(embedded_test_server()->Start());
+
+  GURL test_url(
+      "data:text/html,<!DOCTYPE html>"
+      "<body>"
+      "<panel open dismiss-on-blur id='my_panel' style='position: fixed; inset: 0; margin: 0; padding: 0; border: none; width: 200px; height: 200px; background: white;'>"
+      "</panel>"
+      "</body>");
+
+  auto* contents = static_cast<WebContentsImpl*>(shell()->web_contents());
+
+  EXPECT_TRUE(NavigateToURL(shell(), test_url));
+  WaitForLoadStop(contents);
+
+  RenderFrameHostImpl* root_frame_host =
+      contents->GetPrimaryFrameTree().root()->current_frame_host();
+
+  // Find the popup RenderWidgetHost
+  RenderProcessHost* process = root_frame_host->GetProcess();
+  RenderWidgetHostImpl* popup_widget_host = nullptr;
+  std::unique_ptr<RenderWidgetHostIterator> widgets(
+      RenderWidgetHost::GetRenderWidgetHosts());
+  while (RenderWidgetHost* widget = widgets->GetNextHost()) {
+    if (widget->GetProcess()->GetID() == process->GetID() &&
+        widget != root_frame_host->GetRenderWidgetHost()) {
+      popup_widget_host = static_cast<RenderWidgetHostImpl*>(widget);
+      break;
+    }
+  }
+
+  ASSERT_TRUE(popup_widget_host) << "Secondary RenderWidgetHost was not created!";
+
+  popup_widget_host->WasShown(blink::mojom::RecordContentToVisibleTimeRequestPtr());
+
+  auto eval_result = EvalJs(root_frame_host, "new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));");
+
+  // Verify the panel is initially open
+  bool is_open = EvalJs(root_frame_host, "document.getElementById('my_panel').hasAttribute('open')").ExtractBool();
+  EXPECT_TRUE(is_open);
+
+  // Trigger focus loss (which should trigger outsideclick event).
+  popup_widget_host->GetWidgetInputHandler()->SetFocus(blink::mojom::FocusState::kNotFocusedAndNotActive);
+  
+  // Yield for Mojo run loop
+  {
+    base::RunLoop run_loop;
+    base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(
+        FROM_HERE, run_loop.QuitClosure(), base::Milliseconds(200));
+    run_loop.Run();
+  }
+
+  // Verify the panel dismissed itself
+  int retries = 0;
+  is_open = true;
+  while (retries < 50) {
+    is_open = EvalJs(root_frame_host, "document.getElementById('my_panel').hasAttribute('open')").ExtractBool();
+    if (!is_open) break;
+    base::RunLoop run_loop;
+    base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(
+        FROM_HERE, run_loop.QuitClosure(), base::Milliseconds(50));
+    run_loop.Run();
+    retries++;
+  }
+  
+  EXPECT_FALSE(is_open) << "Panel failed to dismiss on blur!";
+}
 }  // namespace content

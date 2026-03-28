@@ -92,6 +92,7 @@
     "disabled",
     "disablepictureinpicture",
     "disableremoteplayback",
+    "dismiss-on-blur",
     "download",
     "draggable",
     "elementtiming",

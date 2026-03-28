@@ -24,6 +24,11 @@ class CORE_EXPORT HTMLPanelElement : public HTMLElement {
       ContainerNode& insertion_point) override;
   void RemovedFrom(ContainerNode& insertion_point) override;
 
+  void show();
+  void close();
+
+  void DefaultEventHandler(Event&) override;
+
   UnboundedPanelWidget* GetWidgetForTesting() const { return widget_.Get(); }
 
   void Trace(Visitor* visitor) const override;

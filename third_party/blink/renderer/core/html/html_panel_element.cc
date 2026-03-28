@@ -9,6 +9,7 @@
 #include "third_party/blink/renderer/core/html/unbounded_panel_widget.h"
 #include "third_party/blink/renderer/core/html_names.h"
 #include "third_party/blink/renderer/core/layout/layout_unbounded_panel.h"
+#include "third_party/blink/renderer/core/events/event.h"
 
 namespace blink {
 
@@ -44,6 +45,24 @@ void HTMLPanelElement::RemovedFrom(ContainerNode& insertion_point) {
       widget_ = nullptr;
     }
   }
+}
+
+void HTMLPanelElement::show() {
+  setAttribute(html_names::kOpenAttr, g_empty_atom);
+}
+
+void HTMLPanelElement::close() {
+  removeAttribute(html_names::kOpenAttr);
+}
+
+void HTMLPanelElement::DefaultEventHandler(Event& event) {
+  if (event.type() == AtomicString("outsideclick")) {
+    if (FastHasAttribute(html_names::kDismissOnBlurAttr)) {
+      close();
+      event.SetDefaultHandled();
+    }
+  }
+  HTMLElement::DefaultEventHandler(event);
 }
 
 void HTMLPanelElement::Trace(Visitor* visitor) const {

@@ -1859,12 +1859,12 @@ panel {
    precedence over the [popover]:popover-open` rule just below. */
 /* TODO(crbug.com/428039233): it would be cleaner if this was dialog:open,
    rather than dialog[open]. But that crashes. */
-dialog:not([open]), [popover]:where(:not(:popover-open)) {
+dialog:not([open]), panel:not([open]), [popover]:where(:not(:popover-open)) {
     display: none;
 }
 /* TODO(crbug.com/428039233): it would be cleaner if this was dialog:open,
    rather than dialog[open]. But that crashes. */
-dialog[open], [popover]:popover-open {
+dialog[open], panel[open], [popover]:popover-open {
     display: block;
 }
 
