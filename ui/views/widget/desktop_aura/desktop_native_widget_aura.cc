@@ -137,10 +137,10 @@ class DesktopNativeWidgetTopLevelHandler : public aura::WindowObserver {
                                   ? Widget::InitParams::Activatable::kYes
                                   : Widget::InitParams::Activatable::kNo;
     init_params.z_order = root_z_order;
-    // Also provide the context, which Ozone (in particular - Wayland) will use
-    // to parent this newly created toplevel native widget to. Please refer to
-    // https://crrev.com/c/2831291 for more details.
-    init_params.context = context;
+    // Set the parent so that the underlying OS window manager recognizes this
+    // top-level window as transient (e.g. Wayland explicitly reads
+    // `properties.parent_widget`, and X11 should use `WM_TRANSIENT_FOR`).
+    init_params.parent = context;
 
     auto* anchor = child_window->GetProperty(aura::client::kOwnedWindowAnchor);
     if (anchor) {

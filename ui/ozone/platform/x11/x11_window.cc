@@ -267,6 +267,17 @@ X11Window::~X11Window() {
 void X11Window::Initialize(PlatformWindowInitProperties properties) {
   CreateXWindow(properties);
 
+  if (properties.parent_widget != gfx::kNullAcceleratedWidget) {
+    x11::Window parent_x11_window =
+        static_cast<x11::Window>(properties.parent_widget);
+    connection_->SetProperty(xwindow_, x11::Atom::WM_TRANSIENT_FOR,
+                             x11::Atom::WINDOW, parent_x11_window);
+    if (auto* parent_window = X11WindowManager::GetInstance()->GetWindow(
+            properties.parent_widget)) {
+      parent_window->SetTransientWindow(xwindow_);
+    }
+  }
+
   // It can be a status icon window.  If it fails to initialize, don't provide
   // it with a native window handle, close ourselves and let the client destroy
   // ourselves.
