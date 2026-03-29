@@ -232,7 +232,13 @@ void UnboundedPanelWidget::UpdateLifecycle(WebLifecycleUpdate requested_update, 
   viewport_properties.outer_scroll_translation = &TransformPaintPropertyNode::Root();
 
   auto* root = paint_artifact_compositor_->RootLayer();
-  root->SetBounds(gfx::Size(physical_width, physical_height));
+  if (root->bounds() != gfx::Size(physical_width, physical_height)) {
+    root->SetBounds(gfx::Size(physical_width, physical_height));
+    if (widget_base_ && widget_base_->LayerTreeHost()) {
+      widget_base_->LayerTreeHost()->RequestNewLocalSurfaceId();
+    }
+  }
+
   popup_widget_host_->SetPopupCapture(owner_element_->FastHasAttribute(html_names::kCaptureAttr));
   popup_widget_host_->SetPopupBounds(
       screen_rect,

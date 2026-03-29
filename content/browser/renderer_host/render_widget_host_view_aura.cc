@@ -334,6 +334,59 @@ class RenderWidgetHostViewAura::WindowObserver : public aura::WindowObserver {
   raw_ptr<RenderWidgetHostViewAura> view_;
 };
 
+class RenderWidgetHostViewAura::TransientParentWindowObserver : public aura::WindowObserver {
+ public:
+  explicit TransientParentWindowObserver(RenderWidgetHostViewAura* view, aura::Window* parent)
+      : view_(view), parent_(parent) {
+    parent_->AddObserver(this);
+  }
+
+  TransientParentWindowObserver(const TransientParentWindowObserver&) = delete;
+  TransientParentWindowObserver& operator=(const TransientParentWindowObserver&) = delete;
+
+  ~TransientParentWindowObserver() override {
+    if (parent_) {
+      parent_->RemoveObserver(this);
+    }
+  }
+
+  void OnWindowBoundsChanged(aura::Window* window,
+                             const gfx::Rect& old_bounds,
+                             const gfx::Rect& new_bounds,
+                             ui::PropertyChangeReason reason) override {
+    if (window == parent_ && view_->window_) {
+      // Calculate delta movement
+      int dx = new_bounds.x() - old_bounds.x();
+      int dy = new_bounds.y() - old_bounds.y();
+
+      if (dx != 0 || dy != 0) {
+        LOG(ERROR) << "TransientParentWindowObserver DID fire!!";
+        // Only update the origin. We don't use view_->SetBounds because it triggers
+        // full SynchronizeVisualProperties which causes size mismatches and races
+        // with renderer-driven CSS resizes.
+        gfx::Rect bounds = view_->window_->bounds();
+        bounds.Offset(dx, dy);
+        
+        // Suppress circular or redundant updates
+        if (bounds != view_->window_->bounds()) {
+           view_->window_->SetBounds(bounds);
+        }
+      }
+    }
+  }
+
+  void OnWindowDestroying(aura::Window* window) override {
+    if (window == parent_) {
+      parent_->RemoveObserver(this);
+      parent_ = nullptr;
+    }
+  }
+
+ private:
+  raw_ptr<RenderWidgetHostViewAura> view_;
+  raw_ptr<aura::Window> parent_;
+};
+
 ////////////////////////////////////////////////////////////////////////////////
 // RenderWidgetHostViewAura, public:
 
@@ -505,6 +558,11 @@ void RenderWidgetHostViewAura::InitAsPopup(
   // This will fetch and set the display features.
   ObserveDevicePosturePlatformProvider();
 #endif
+
+  if (widget_type_ == WidgetType::kUnboundedPanel && popup_parent_host_view_->window_) {
+    transient_parent_observer_ = std::make_unique<TransientParentWindowObserver>(
+        this, popup_parent_host_view_->window_);
+  }
 }
 
 void RenderWidgetHostViewAura::Hide() {

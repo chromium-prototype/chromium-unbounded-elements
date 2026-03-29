@@ -4948,16 +4948,7 @@ bool WebFrameWidgetImpl::UpdateScreenRects(
     handled = true;
   }
 
-  // Synchronize unbound panel OS windows synchronously with the main window bounds
-  if (changed && local_root_ && local_root_->GetFrame()) {
-    if (Document* document = local_root_->GetFrame()->GetDocument()) {
-      for (const auto& panel : document->UnboundedPanels()) {
-        if (auto* widget = panel->GetWidget()) {
-          widget->SynchronizeBounds();
-        }
-      }
-    }
-  }
+
 
   return handled;
 }

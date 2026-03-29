@@ -597,6 +597,9 @@ class CONTENT_EXPORT RenderWidgetHostViewAura
 
   class WindowObserver;
   friend class WindowObserver;
+  
+  class TransientParentWindowObserver;
+  friend class TransientParentWindowObserver;
 
   friend void VerifyStaleContentOnFrameEviction(
       RenderWidgetHostView* render_widget_host_view);
@@ -751,6 +754,7 @@ class CONTENT_EXPORT RenderWidgetHostViewAura
   std::unique_ptr<DelegatedFrameHost> delegated_frame_host_;
 
   std::unique_ptr<WindowObserver> window_observer_;
+  std::unique_ptr<TransientParentWindowObserver> transient_parent_observer_;
 
   // Tracks the ancestors of the RWHVA window for window location changes.
   std::unique_ptr<aura_extra::WindowPositionInRootMonitor>
