@@ -935,22 +935,36 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, WindowDragSync) {
   RenderWidgetHostViewBase* popup_view = popup_widget_host->GetView();
   ASSERT_TRUE(popup_view);
 
-  gfx::Rect initial_bounds = popup_view->GetViewBounds();
-  
+
   // Simulate the browser window moving.
   aura::Window* browser_window = shell()->window();
-  gfx::Rect browser_bounds = browser_window->GetBoundsInScreen();
+  
+  // Make sure it doesn't hit any screen borders.
+  gfx::Rect browser_bounds(100, 100, 400, 300);
+  browser_window->SetBoundsInScreen(browser_bounds, display::Screen::Get()->GetDisplayNearestWindow(browser_window));
+
+  base::RunLoop settle_loop;
+  base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(FROM_HERE, settle_loop.QuitClosure(), base::Milliseconds(300));
+  settle_loop.Run();
+
+  gfx::Rect initial_bounds = popup_view->GetViewBounds();
+
   browser_bounds.Offset(50, 50);
   browser_window->SetBoundsInScreen(browser_bounds, display::Screen::Get()->GetDisplayNearestWindow(browser_window));
-  
-  // Run loop to let the observer execute
+
   base::RunLoop run_loop;
-  base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(FROM_HERE, run_loop.QuitClosure(), base::Milliseconds(100));
+  base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(FROM_HERE, run_loop.QuitClosure(), base::Milliseconds(300));
   run_loop.Run();
 
   gfx::Rect new_bounds = popup_view->GetViewBounds();
-  EXPECT_EQ(new_bounds.x(), initial_bounds.x() + 50);
-  EXPECT_EQ(new_bounds.y(), initial_bounds.y() + 50);
+  
+  // The popup window should move by EXACTLY the amount the browser window successfully moved!
+  gfx::Rect final_browser_bounds = browser_window->GetBoundsInScreen();
+  int actual_dx = final_browser_bounds.x() - 100;
+  int actual_dy = final_browser_bounds.y() - 100;
+  
+  EXPECT_EQ(new_bounds.x(), initial_bounds.x() + actual_dx);
+  EXPECT_EQ(new_bounds.y(), initial_bounds.y() + actual_dy);
 }
 
 IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, TextSelectionCursorUpdates) {

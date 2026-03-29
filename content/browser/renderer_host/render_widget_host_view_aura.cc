@@ -355,26 +355,22 @@ class RenderWidgetHostViewAura::TransientParentWindowObserver : public aura::Win
   }
 
   void OnHostMovedInPixels(aura::WindowTreeHost* host) override {
-    if (host == host_ && view_->window_) {
+    if (host == host_ && view_->window_ && view_->window_->GetHost()) {
       gfx::Rect new_bounds_in_pixels = host_->GetBoundsInPixels();
       int dx_pixels = new_bounds_in_pixels.x() - last_bounds_in_pixels_.x();
       int dy_pixels = new_bounds_in_pixels.y() - last_bounds_in_pixels_.y();
       last_bounds_in_pixels_ = new_bounds_in_pixels;
       
       // Ignore huge startup WM layout jumps before user interaction
-      if (std::abs(dx_pixels) > 200 || std::abs(dy_pixels) > 200) return;
+      if (std::abs(dx_pixels) > 200 || std::abs(dy_pixels) > 200) {
+        return;
+      }
       
       if (dx_pixels != 0 || dy_pixels != 0) {
-        float scale = host_->device_scale_factor();
-        int dx = std::round(dx_pixels / scale);
-        int dy = std::round(dy_pixels / scale);
-        if (dx != 0 || dy != 0) {
-          gfx::Rect bounds = view_->window_->bounds();
-          bounds.Offset(dx, dy);
-          if (bounds != view_->window_->bounds()) {
-             view_->window_->SetBounds(bounds);
-          }
-        }
+        aura::WindowTreeHost* popup_host = view_->window_->GetHost();
+        gfx::Rect bounds_in_pixels = popup_host->GetBoundsInPixels();
+        bounds_in_pixels.Offset(dx_pixels, dy_pixels);
+        popup_host->SetBoundsInPixels(bounds_in_pixels);
       }
     }
   }
