@@ -245,7 +245,8 @@ class DesktopNativeWidgetAuraWindowParentingClient
     bool is_fullscreen = window->GetProperty(aura::client::kShowStateKey) ==
                          ui::mojom::WindowShowState::kFullscreen;
     bool is_menu = window->GetType() == aura::client::WINDOW_TYPE_MENU;
-    bool is_frameless = window->GetProperty(aura::client::kRemoveStandardFrame);
+    bool is_frameless = window->GetProperty(aura::client::kRemoveStandardFrame) &&
+                        window->GetType() == aura::client::WINDOW_TYPE_NORMAL;
 
     if (is_fullscreen || is_menu || is_frameless) {
       ui::ZOrderLevel root_z_order = ui::ZOrderLevel::kNormal;

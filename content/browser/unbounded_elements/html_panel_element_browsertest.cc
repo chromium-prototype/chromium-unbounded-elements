@@ -15,6 +15,7 @@
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/test/browser_test.h"
+#include "ui/display/screen.h"
 #include "content/public/test/content_browser_test.h"
 #include "content/public/test/content_browser_test_utils.h"
 #include "content/public/browser/render_widget_host_iterator.h"
@@ -904,6 +905,46 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, UnboundedPanelZOrder) {
   // which forces it to be strictly clipped to the host's X11 bounds and can break Z-order.
   EXPECT_NE(native_window->GetRootWindow(), main_contents_window->GetRootWindow());
 #endif
+}
+
+IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, WindowDragSync) {
+  ASSERT_TRUE(embedded_test_server()->Start());
+
+  GURL test_url("data:text/html,<!DOCTYPE html><body><panel open id='my_panel' style='position: fixed; inset: 0; width: 100px; height: 100px; background: white;'></panel></body>");
+  auto* contents = static_cast<WebContentsImpl*>(shell()->web_contents());
+  EXPECT_TRUE(NavigateToURL(shell(), test_url));
+  WaitForLoadStop(contents);
+  
+  RenderFrameHostImpl* root_frame_host = contents->GetPrimaryFrameTree().root()->current_frame_host();
+  RenderProcessHost* process = root_frame_host->GetProcess();
+  RenderWidgetHostImpl* popup_widget_host = nullptr;
+  std::unique_ptr<RenderWidgetHostIterator> widgets(RenderWidgetHost::GetRenderWidgetHosts());
+  while (RenderWidgetHost* widget = widgets->GetNextHost()) {
+    if (widget->GetProcess()->GetID() == process->GetID() && widget != root_frame_host->GetRenderWidgetHost()) {
+      popup_widget_host = static_cast<RenderWidgetHostImpl*>(widget);
+      break;
+    }
+  }
+  ASSERT_TRUE(popup_widget_host);
+  RenderWidgetHostViewBase* popup_view = popup_widget_host->GetView();
+  ASSERT_TRUE(popup_view);
+
+  gfx::Rect initial_bounds = popup_view->GetViewBounds();
+  
+  // Simulate the browser window moving.
+  aura::Window* browser_window = shell()->window();
+  gfx::Rect browser_bounds = browser_window->GetBoundsInScreen();
+  browser_bounds.Offset(50, 50);
+  browser_window->SetBoundsInScreen(browser_bounds, display::Screen::Get()->GetDisplayNearestWindow(browser_window));
+  
+  // Run loop to let the observer execute
+  base::RunLoop run_loop;
+  base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(FROM_HERE, run_loop.QuitClosure(), base::Milliseconds(100));
+  run_loop.Run();
+
+  gfx::Rect new_bounds = popup_view->GetViewBounds();
+  EXPECT_EQ(new_bounds.x(), initial_bounds.x() + 50);
+  EXPECT_EQ(new_bounds.y(), initial_bounds.y() + 50);
 }
 
 }  // namespace content

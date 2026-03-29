@@ -72,6 +72,7 @@
 #include "ui/aura/window_event_dispatcher.h"
 #include "ui/aura/window_observer.h"
 #include "ui/aura/window_tree_host.h"
+#include "ui/aura/window_tree_host_observer.h"
 #include "ui/aura_extra/window_position_in_root_monitor.h"
 #include "ui/base/clipboard/clipboard.h"
 #include "ui/base/clipboard/scoped_clipboard_writer.h"
@@ -334,57 +335,67 @@ class RenderWidgetHostViewAura::WindowObserver : public aura::WindowObserver {
   raw_ptr<RenderWidgetHostViewAura> view_;
 };
 
-class RenderWidgetHostViewAura::TransientParentWindowObserver : public aura::WindowObserver {
+class RenderWidgetHostViewAura::TransientParentWindowObserver : public aura::WindowTreeHostObserver, public aura::WindowObserver {
  public:
-  explicit TransientParentWindowObserver(RenderWidgetHostViewAura* view, aura::Window* parent)
-      : view_(view), parent_(parent) {
-    parent_->AddObserver(this);
+  explicit TransientParentWindowObserver(RenderWidgetHostViewAura* view, aura::WindowTreeHost* host, aura::Window* popup_parent)
+      : view_(view), host_(host), popup_parent_(popup_parent) {
+    if (popup_parent_) popup_parent_->AddObserver(this);
+    if (host_) {
+      host_->AddObserver(this);
+      last_bounds_in_pixels_ = host_->GetBoundsInPixels();
+    }
   }
 
   TransientParentWindowObserver(const TransientParentWindowObserver&) = delete;
   TransientParentWindowObserver& operator=(const TransientParentWindowObserver&) = delete;
 
   ~TransientParentWindowObserver() override {
-    if (parent_) {
-      parent_->RemoveObserver(this);
-    }
+    if (popup_parent_) popup_parent_->RemoveObserver(this);
+    if (host_) host_->RemoveObserver(this);
   }
 
-  void OnWindowBoundsChanged(aura::Window* window,
-                             const gfx::Rect& old_bounds,
-                             const gfx::Rect& new_bounds,
-                             ui::PropertyChangeReason reason) override {
-    if (window == parent_ && view_->window_) {
-      // Calculate delta movement
-      int dx = new_bounds.x() - old_bounds.x();
-      int dy = new_bounds.y() - old_bounds.y();
-
-      if (dx != 0 || dy != 0) {
-        LOG(ERROR) << "TransientParentWindowObserver DID fire!!";
-        // Only update the origin. We don't use view_->SetBounds because it triggers
-        // full SynchronizeVisualProperties which causes size mismatches and races
-        // with renderer-driven CSS resizes.
-        gfx::Rect bounds = view_->window_->bounds();
-        bounds.Offset(dx, dy);
-        
-        // Suppress circular or redundant updates
-        if (bounds != view_->window_->bounds()) {
-           view_->window_->SetBounds(bounds);
+  void OnHostMovedInPixels(aura::WindowTreeHost* host) override {
+    if (host == host_ && view_->window_) {
+      gfx::Rect new_bounds_in_pixels = host_->GetBoundsInPixels();
+      int dx_pixels = new_bounds_in_pixels.x() - last_bounds_in_pixels_.x();
+      int dy_pixels = new_bounds_in_pixels.y() - last_bounds_in_pixels_.y();
+      last_bounds_in_pixels_ = new_bounds_in_pixels;
+      
+      // Ignore huge startup WM layout jumps before user interaction
+      if (std::abs(dx_pixels) > 200 || std::abs(dy_pixels) > 200) return;
+      
+      if (dx_pixels != 0 || dy_pixels != 0) {
+        float scale = host_->device_scale_factor();
+        int dx = std::round(dx_pixels / scale);
+        int dy = std::round(dy_pixels / scale);
+        if (dx != 0 || dy != 0) {
+          gfx::Rect bounds = view_->window_->bounds();
+          bounds.Offset(dx, dy);
+          if (bounds != view_->window_->bounds()) {
+             view_->window_->SetBounds(bounds);
+          }
         }
       }
     }
   }
 
   void OnWindowDestroying(aura::Window* window) override {
-    if (window == parent_) {
-      parent_->RemoveObserver(this);
-      parent_ = nullptr;
+    if (window == popup_parent_) {
+      popup_parent_->RemoveObserver(this);
+      popup_parent_ = nullptr;
+      if (host_) {
+        host_->RemoveObserver(this);
+        host_ = nullptr;
+      }
     }
   }
 
+
  private:
   raw_ptr<RenderWidgetHostViewAura> view_;
-  raw_ptr<aura::Window> parent_;
+  raw_ptr<aura::WindowTreeHost> host_;
+  raw_ptr<aura::Window> popup_parent_;
+  gfx::Rect last_bounds_in_pixels_;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -562,7 +573,7 @@ void RenderWidgetHostViewAura::InitAsPopup(
 
   if (widget_type_ == WidgetType::kUnboundedPanel && popup_parent_host_view_->window_) {
     transient_parent_observer_ = std::make_unique<TransientParentWindowObserver>(
-        this, popup_parent_host_view_->window_);
+        this, popup_parent_host_view_->window_->GetHost(), popup_parent_host_view_->window_);
   }
 }
 
