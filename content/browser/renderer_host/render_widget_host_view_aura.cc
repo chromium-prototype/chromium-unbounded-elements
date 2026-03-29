@@ -445,7 +445,7 @@ void RenderWidgetHostViewAura::InitAsPopup(
     // similar mechanism to ensure a second popup doesn't cause the first one
     // to never get a chance to filter events. See crbug.com/160589.
     CHECK(old_child->popup_parent_host_view_ == popup_parent_host_view_);
-    if (transient_window_client && old_child->widget_type_ != WidgetType::kUnboundedPanel) {
+    if (transient_window_client) {
       transient_window_client->RemoveTransientChild(
         popup_parent_host_view_->window_, old_child->window_);
     }
@@ -465,7 +465,7 @@ void RenderWidgetHostViewAura::InitAsPopup(
   // in a system modal dialog. Do this before calling ParentWindowWithContext
   // below so that the transient parent is visible to WindowTreeClient.
   // This fixes crbug.com/328593.
-  if (transient_window_client && widget_type_ != WidgetType::kUnboundedPanel) {
+  if (transient_window_client) {
     transient_window_client->AddTransientChild(
         popup_parent_host_view_->window_, window_);
   }
