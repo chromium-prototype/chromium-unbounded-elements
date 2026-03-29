@@ -21,3 +21,11 @@ When working on the Unbounded Elements project, please observe the following gui
 ## 4. Documentation Upkeep
 - Rigorously update the `TODOs.md` checklist.
 - If previously undocumented complexities emerge (e.g., discovering the GN V8 bindings requirement), expand the checklist and documentation to proactively encompass those new steps for future team members and AI assists.
+
+## 5. Preventing Regressions
+- When modifying window types, z-ordering, or clipping logic for unbounded elements, ALWAYS run the full suite of integration tests to prevent subtle UI/OS bugs (like lost shadows, always-on-top behavior, cursor mismappings, or drag synchronization failures).
+- Ensure you run and pass at least the following test suites before committing:
+  - `HTMLPanelElementBrowserTest.UnboundedPanelZOrder`
+  - `HTMLPanelElementBrowserTest.WindowBoundsSync`
+  - `HTMLPanelElementBrowserTest.InputEventRouting`
+  - `third_party/blink/web_tests/unbounded-elements/headless_tester/run_sophisticated_test_wrapper.sh` (for visual clipping and bounds verification)
