@@ -353,6 +353,7 @@ void UnboundedPanelWidget::FocusChanged(mojom::blink::FocusState focus_state) {
   bool is_focused = (focus_state == mojom::blink::FocusState::kFocused);
 
   is_active_ = is_active;
+  is_focused_ = is_focused;
 
   if (auto* frame = document.GetFrame()) {
     if (auto* frame_widget = static_cast<WebFrameWidgetImpl*>(frame->GetWidgetForLocalRoot())) {

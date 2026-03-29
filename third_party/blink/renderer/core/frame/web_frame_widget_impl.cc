@@ -1807,10 +1807,25 @@ void WebFrameWidgetImpl::FocusChanged(mojom::blink::FocusState focus_state) {
   // these maybe should goto the local root so that the rest of input messages
   // sent to those are preserved in order.
   DCHECK(ForMainFrame());
-  View()->SetIsActive(focus_state == mojom::blink::FocusState::kFocused ||
-                      focus_state ==
-                          mojom::blink::FocusState::kNotFocusedAndActive);
-  View()->SetPageFocus(focus_state == mojom::blink::FocusState::kFocused);
+  bool is_active = (focus_state == mojom::blink::FocusState::kFocused ||
+                    focus_state == mojom::blink::FocusState::kNotFocusedAndActive);
+  bool is_focused = (focus_state == mojom::blink::FocusState::kFocused);
+
+  if (!is_active || !is_focused) {
+    if (local_root_ && local_root_->GetFrame()) {
+      if (auto* document = local_root_->GetFrame()->GetDocument()) {
+        for (const auto& panel : document->UnboundedPanels()) {
+          if (auto* widget = panel->GetWidget()) {
+            if (widget->IsActive()) is_active = true;
+            if (widget->IsFocused()) is_focused = true;
+          }
+        }
+      }
+    }
+  }
+
+  View()->SetIsActive(is_active);
+  View()->SetPageFocus(is_focused);
 }
 
 bool WebFrameWidgetImpl::ShouldAckSyntheticInputImmediately() {
