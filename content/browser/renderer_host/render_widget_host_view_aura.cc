@@ -507,6 +507,7 @@ void RenderWidgetHostViewAura::InitAsPopup(
   popup_parent_host_view_->SetPopupChild(this);
   if (widget_type_ == WidgetType::kUnboundedPanel) {
     CreateAuraWindow(aura::client::WINDOW_TYPE_NORMAL);
+    window_->SetProperty(aura::client::kRemoveStandardFrame, true);
   } else {
     CreateAuraWindow(aura::client::WINDOW_TYPE_MENU);
   }

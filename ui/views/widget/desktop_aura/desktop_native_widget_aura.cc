@@ -106,6 +106,7 @@ class DesktopNativeWidgetTopLevelHandler : public aura::WindowObserver {
                                           const gfx::Rect& bounds,
                                           bool full_screen,
                                           bool is_menu,
+                                          bool is_frameless,
                                           ui::ZOrderLevel root_z_order) {
     // This instance will get deleted when the widget is destroyed.
     DesktopNativeWidgetTopLevelHandler* top_level_handler =
@@ -117,6 +118,7 @@ class DesktopNativeWidgetTopLevelHandler : public aura::WindowObserver {
         Widget::InitParams::NATIVE_WIDGET_OWNS_WIDGET,
         full_screen ? Widget::InitParams::TYPE_WINDOW
         : is_menu   ? Widget::InitParams::TYPE_MENU
+        : is_frameless ? Widget::InitParams::TYPE_WINDOW_FRAMELESS
                     : Widget::InitParams::TYPE_POPUP);
 
 #if BUILDFLAG(IS_WIN)
@@ -243,8 +245,9 @@ class DesktopNativeWidgetAuraWindowParentingClient
     bool is_fullscreen = window->GetProperty(aura::client::kShowStateKey) ==
                          ui::mojom::WindowShowState::kFullscreen;
     bool is_menu = window->GetType() == aura::client::WINDOW_TYPE_MENU;
+    bool is_frameless = window->GetProperty(aura::client::kRemoveStandardFrame);
 
-    if (is_fullscreen || is_menu) {
+    if (is_fullscreen || is_menu || is_frameless) {
       ui::ZOrderLevel root_z_order = ui::ZOrderLevel::kNormal;
       internal::NativeWidgetPrivate* native_widget =
           DesktopNativeWidgetAura::ForWindow(root_window_);
@@ -254,7 +257,7 @@ class DesktopNativeWidgetAuraWindowParentingClient
 
       return DesktopNativeWidgetTopLevelHandler::CreateParentWindow(
           window, root_window_ /* context */, bounds, is_fullscreen, is_menu,
-          root_z_order);
+          is_frameless, root_z_order);
     }
 #endif  // !BUILDFLAG(IS_FUCHSIA)
     return root_window_;

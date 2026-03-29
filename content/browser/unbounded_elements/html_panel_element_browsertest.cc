@@ -898,6 +898,11 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, UnboundedPanelZOrder) {
   // This guarantees the OS will always keep the panel visually above the browser.
   aura::Window* main_contents_window = contents->GetRenderWidgetHostView()->GetNativeView();
   EXPECT_EQ(transient_client->GetTransientParent(native_window), main_contents_window);
+
+  // Reproduce regressions: The panel must break out of the host OS window to be truly unbounded.
+  // A shared RootWindow implies it is a layer within the browser's DesktopWindowTreeHost,
+  // which forces it to be strictly clipped to the host's X11 bounds and can break Z-order.
+  EXPECT_NE(native_window->GetRootWindow(), main_contents_window->GetRootWindow());
 #endif
 }
 
