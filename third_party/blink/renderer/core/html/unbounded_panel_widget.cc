@@ -67,7 +67,6 @@ void UnboundedPanelWidget::Trace(Visitor* visitor) const {
 }
 
 void UnboundedPanelWidget::Initialize() {
-  LOG(ERROR) << "UnboundedPanelWidget::Initialize BEGIN";
   LocalFrame* frame = owner_element_->GetDocument().GetFrame();
   if (!frame) return;
 
@@ -418,7 +417,7 @@ void UnboundedPanelWidget::DidChangeCursor(const ui::Cursor& cursor) {
   // browser window when it has implicit mouse capture. Since popups
   // don't always get OS capture automatically, we enforce the visual
   // text-selection caret consistency here.
-  if (is_mouse_button_down_) {
+  if (is_mouse_button_down_ && cursor.type() == ui::mojom::CursorType::kPointer) {
     return;
   }
 

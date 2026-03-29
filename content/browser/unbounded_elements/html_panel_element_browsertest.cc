@@ -10,6 +10,7 @@
 #include "base/test/bind.h"
 #include "base/task/single_thread_task_runner.h"
 #include "cc/test/pixel_test_utils.h"
+#include "components/input/cursor_manager.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "content/browser/renderer_host/render_widget_host_view_base.h"
 #include "content/browser/web_contents/web_contents_impl.h"
@@ -950,6 +951,76 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, WindowDragSync) {
   gfx::Rect new_bounds = popup_view->GetViewBounds();
   EXPECT_EQ(new_bounds.x(), initial_bounds.x() + 50);
   EXPECT_EQ(new_bounds.y(), initial_bounds.y() + 50);
+}
+
+IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, TextSelectionCursorUpdates) {
+  ASSERT_TRUE(embedded_test_server()->Start());
+
+  GURL test_url("data:text/html,<!DOCTYPE html><body>"
+                "<panel open id='my_panel' style='position: fixed; inset: 0; width: 200px; height: 200px; background: white;'>"
+                "  <div id='text' style='user-select: text; width: 100%; height: 100%;'>Some long text that we can select over and cursor maps correctly.</div>"
+                "</panel></body>");
+  auto* contents = static_cast<WebContentsImpl*>(shell()->web_contents());
+  EXPECT_TRUE(NavigateToURL(shell(), test_url));
+  WaitForLoadStop(contents);
+  
+  RenderFrameHostImpl* root_frame_host = contents->GetPrimaryFrameTree().root()->current_frame_host();
+  RenderProcessHost* process = root_frame_host->GetProcess();
+  RenderWidgetHostImpl* popup_widget_host = nullptr;
+  std::unique_ptr<RenderWidgetHostIterator> widgets(RenderWidgetHost::GetRenderWidgetHosts());
+  while (RenderWidgetHost* widget = widgets->GetNextHost()) {
+    if (widget->GetProcess()->GetID() == process->GetID() && widget != root_frame_host->GetRenderWidgetHost()) {
+      popup_widget_host = static_cast<RenderWidgetHostImpl*>(widget);
+      break;
+    }
+  }
+  ASSERT_TRUE(popup_widget_host);
+  RenderWidgetHostViewBase* popup_view = popup_widget_host->GetView();
+  ASSERT_TRUE(popup_view);
+  
+  // Show and wait for a frame layout update
+  popup_widget_host->WasShown(blink::mojom::RecordContentToVisibleTimeRequestPtr());
+  auto eval_result = EvalJs(root_frame_host, "new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));");
+
+  // Mouse move over the text to get IBeam BEFORE mousedown
+  blink::WebMouseEvent mouse_down(
+      blink::WebInputEvent::Type::kMouseDown,
+      blink::WebInputEvent::kNoModifiers,
+      base::TimeTicks::Now());
+  mouse_down.button = blink::WebPointerProperties::Button::kLeft;
+  mouse_down.click_count = 1;
+  mouse_down.SetPositionInWidget(50, 50);
+  mouse_down.SetPositionInScreen(50, 50);
+  popup_widget_host->ForwardMouseEvent(mouse_down);
+
+  // Mouse move over the text to drag
+  blink::WebMouseEvent mouse_move(
+      blink::WebInputEvent::Type::kMouseMove,
+      blink::WebInputEvent::kLeftButtonDown,
+      base::TimeTicks::Now());
+  mouse_move.button = blink::WebPointerProperties::Button::kLeft;
+  mouse_move.click_count = 1;
+  mouse_move.SetPositionInWidget(100, 50);
+  mouse_move.SetPositionInScreen(100, 50);
+  popup_widget_host->ForwardMouseEvent(mouse_move);
+
+  // Wait to see if last set cursor type ever becomes kIBeam due to hit testing over select node
+  auto wait_for_ibeam = [&]() {
+    for (int i = 0; i < 50; ++i) {
+      if (popup_view->GetCursorManager() &&
+          popup_view->GetCursorManager()->GetLastSetCursorTypeForTesting() ==
+          ui::mojom::CursorType::kIBeam) {
+        return true;
+      }
+      base::RunLoop run_loop;
+      base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(
+          FROM_HERE, run_loop.QuitClosure(), base::Milliseconds(50));
+      run_loop.Run();
+    }
+    return false;
+  };
+
+  EXPECT_TRUE(wait_for_ibeam()) << "Cursor never updated to I-beam during text selection";
 }
 
 }  // namespace content
