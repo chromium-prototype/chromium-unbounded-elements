@@ -113,9 +113,9 @@
 #include "third_party/blink/renderer/core/html/fenced_frame/html_fenced_frame_element.h"
 #include "third_party/blink/renderer/core/html/forms/text_control_element.h"
 #include "third_party/blink/renderer/core/html/html_frame_owner_element.h"
+#include "third_party/blink/renderer/core/html/html_panel_element.h"
 #include "third_party/blink/renderer/core/html/html_plugin_element.h"
 #include "third_party/blink/renderer/core/html/plugin_document.h"
-#include "third_party/blink/renderer/core/html/html_panel_element.h"
 #include "third_party/blink/renderer/core/html/unbounded_panel_widget.h"
 #include "third_party/blink/renderer/core/input/context_menu_allowed_scope.h"
 #include "third_party/blink/renderer/core/input/event_handler.h"
@@ -1582,6 +1582,7 @@ void WebFrameWidgetImpl::Trace(Visitor* visitor) const {
   visitor->Trace(mouse_capture_element_);
   visitor->Trace(device_emulator_);
   visitor->Trace(animation_frame_timing_monitor_);
+  visitor->Trace(active_unbounded_panel_);
 }
 
 void WebFrameWidgetImpl::SetNeedsRecalculateRasterScales() {
@@ -1807,8 +1808,9 @@ void WebFrameWidgetImpl::FocusChanged(mojom::blink::FocusState focus_state) {
   // these maybe should goto the local root so that the rest of input messages
   // sent to those are preserved in order.
   DCHECK(ForMainFrame());
-  bool is_active = (focus_state == mojom::blink::FocusState::kFocused ||
-                    focus_state == mojom::blink::FocusState::kNotFocusedAndActive);
+  bool is_active =
+      (focus_state == mojom::blink::FocusState::kFocused ||
+       focus_state == mojom::blink::FocusState::kNotFocusedAndActive);
   bool is_focused = (focus_state == mojom::blink::FocusState::kFocused);
 
   if (!is_active || !is_focused) {
@@ -1816,8 +1818,12 @@ void WebFrameWidgetImpl::FocusChanged(mojom::blink::FocusState focus_state) {
       if (auto* document = local_root_->GetFrame()->GetDocument()) {
         for (const auto& panel : document->UnboundedPanels()) {
           if (auto* widget = panel->GetWidget()) {
-            if (widget->IsActive()) is_active = true;
-            if (widget->IsFocused()) is_focused = true;
+            if (widget->IsActive()) {
+              is_active = true;
+            }
+            if (widget->IsFocused()) {
+              is_focused = true;
+            }
           }
         }
       }
@@ -3084,8 +3090,22 @@ WebInputEventResult WebFrameWidgetImpl::DispatchBufferedTouchEvents() {
       .DispatchBufferedTouchEvents();
 }
 
+WebInputEventResult WebFrameWidgetImpl::HandleInputEventFromPanel(
+    const WebCoalescedInputEvent& coalesced_event,
+    UnboundedPanelWidget* panel) {
+  active_unbounded_panel_ = panel;
+  bool old = handling_panel_event_;
+  handling_panel_event_ = true;
+  auto result = HandleInputEvent(coalesced_event);
+  handling_panel_event_ = old;
+  return result;
+}
+
 WebInputEventResult WebFrameWidgetImpl::HandleInputEvent(
     const WebCoalescedInputEvent& coalesced_event) {
+  if (!handling_panel_event_) {
+    active_unbounded_panel_ = nullptr;
+  }
   const WebInputEvent& input_event = coalesced_event.Event();
   TRACE_EVENT1("input,rail", "WebFrameWidgetImpl::HandleInputEvent", "type",
                WebInputEvent::GetName(input_event.GetType()));
@@ -3971,15 +3991,10 @@ void WebFrameWidgetImpl::InjectScrollbarGestureScroll(
 }
 
 void WebFrameWidgetImpl::DidChangeCursor(const ui::Cursor& cursor) {
-  widget_base_->SetCursor(cursor);
-  if (LocalFrame* frame = local_root_->GetFrame()) {
-    if (Document* document = frame->GetDocument()) {
-      for (const auto& panel : document->UnboundedPanels()) {
-        if (auto* widget = panel->GetWidget()) {
-          widget->DidChangeCursor(cursor);
-        }
-      }
-    }
+  if (active_unbounded_panel_) {
+    active_unbounded_panel_->DidChangeCursor(cursor);
+  } else {
+    widget_base_->SetCursor(cursor);
   }
 }
 
@@ -4956,8 +4971,8 @@ void WebFrameWidgetImpl::UpdateViewportDescription(
 bool WebFrameWidgetImpl::UpdateScreenRects(
     const gfx::Rect& widget_screen_rect,
     const gfx::Rect& window_screen_rect) {
-  bool changed = widget_base_->WindowScreenRect().origin() !=
-                 window_screen_rect.origin();
+  bool changed =
+      widget_base_->WindowScreenRect().origin() != window_screen_rect.origin();
   bool handled = false;
 
   if (device_emulator_ && widget_base_ && !widget_base_->WillBeDestroyed()) {
@@ -4978,8 +4993,6 @@ bool WebFrameWidgetImpl::UpdateScreenRects(
     widget_base_->SetScreenRects(widget_screen_rect, window_screen_rect);
     handled = true;
   }
-
-
 
   return handled;
 }

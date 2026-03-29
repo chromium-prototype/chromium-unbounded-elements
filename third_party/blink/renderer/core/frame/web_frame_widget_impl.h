@@ -102,7 +102,7 @@ class Page;
 class PaintWorkletPaintDispatcher;
 class RemoteFrame;
 class WebLocalFrameImpl;
-class WebPlugin;
+class UnboundedPanelWidget;
 class WebViewImpl;
 class WidgetBase;
 class WidgetEventHandler;
@@ -265,6 +265,13 @@ class CORE_EXPORT WebFrameWidgetImpl
       Vector<gfx::Rect>* bounds_in_dips) override;
   // Return the last calculated cursor anchor info.
   mojom::blink::InputCursorAnchorInfoPtr& GetLastCursorAnchorInfoForTesting();
+
+  void SetActiveUnboundedPanel(UnboundedPanelWidget* panel) {
+    active_unbounded_panel_ = panel;
+  }
+  UnboundedPanelWidget* GetActiveUnboundedPanel() const {
+    return active_unbounded_panel_;
+  }
   bool HasImeRenderWidgetHost() const override {
     return !!ime_render_widget_host_;
   }
@@ -437,6 +444,8 @@ class CORE_EXPORT WebFrameWidgetImpl
       std::unique_ptr<WebCoalescedInputEvent> event) override;
   WebInputEventResult DispatchBufferedTouchEvents() override;
   WebInputEventResult HandleInputEvent(const WebCoalescedInputEvent&) override;
+  WebInputEventResult HandleInputEventFromPanel(const WebCoalescedInputEvent&,
+                                                UnboundedPanelWidget*);
   void UpdateTextInputState() override;
   void UpdateSelectionBounds() override;
   void ShowVirtualKeyboard() override;
@@ -865,7 +874,7 @@ class CORE_EXPORT WebFrameWidgetImpl
   void DragSourceSystemDragEnded() override;
   void SetBackgroundOpaque(bool opaque) override;
   void SetActive(bool active) override;
-  
+
   // For both mainframe and childframe change the text direction of the
   // currently selected input field (if any).
   void SetTextDirection(base::i18n::TextDirection direction) override;
@@ -1300,6 +1309,10 @@ class CORE_EXPORT WebFrameWidgetImpl
   std::optional<float> browser_controls_top_height_override_;
 
   bool throttling_frame_rate_ = false;
+  // Active unbounded panel receiving events, to isolate OS responses like
+  // cursors
+  Member<UnboundedPanelWidget> active_unbounded_panel_;
+  bool handling_panel_event_ = false;
 };
 
 }  // namespace blink

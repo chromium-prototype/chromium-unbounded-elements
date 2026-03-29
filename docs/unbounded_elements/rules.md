@@ -2,7 +2,10 @@
 
 When working on the Unbounded Elements project, please observe the following guidelines based on prior iterations and best practices:
 
-## 1. Commit Hygiene
+## 1. Prioritize Regressions
+- **Fix Known Regressions Immediately**: You must prioritize and resolve any open regressions noted in `TODOs.md` before starting work on new features. Resolving stability issues takes precedence over feature work.
+
+## 2. Commit Hygiene
 - **Verbose Commit Messages**: Ensure commit messages are highly detailed. Explicitly mention the `Bug: ` number (or `None`), testing details (e.g. `TDD-Coverage: <test file> passes`), and a breakdown of all touched files and the reasoning behind structural or configuration changes.
   - **Documentation Commits**: You may include updates to `TODOs.md` in the same commit as the codebase implementation. There is no need for a separate commit.
 
