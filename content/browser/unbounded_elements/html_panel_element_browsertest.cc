@@ -512,11 +512,6 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, FocusAndActivationRouting) {
   // Wait a bit for layout / mojo
   auto eval_result = EvalJs(root_frame_host, "new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));");
 
-  // Simulate the OS focusing the secondary window and blurring the main window
-  auto* main_rwh = static_cast<RenderWidgetHostImpl*>(root_frame_host->GetRenderWidgetHost());
-  main_rwh->Blur();
-  main_rwh->SetActive(false);
-  
   popup_widget_host->Focus();
 
   // Send a mouse down event directly onto the input field. 
@@ -540,6 +535,11 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, FocusAndActivationRouting) {
   mouse_up.SetPositionInWidget(20, 20);
   mouse_up.SetPositionInScreen(20, 20);
   popup_widget_host->ForwardMouseEvent(mouse_up);
+
+  // Simulate the OS blurring the main window asynchronously AFTER the panel processed the click
+  auto* main_rwh = static_cast<RenderWidgetHostImpl*>(root_frame_host->GetRenderWidgetHost());
+  main_rwh->Blur();
+  main_rwh->SetActive(false);
 
   // Check if activeElement is our input.
   bool is_focused = EvalJs(root_frame_host, "document.activeElement === document.getElementById('my_input')").ExtractBool();

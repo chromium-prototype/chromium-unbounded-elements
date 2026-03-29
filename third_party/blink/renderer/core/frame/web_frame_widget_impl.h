@@ -121,6 +121,7 @@ class CORE_EXPORT WebFrameWidgetImpl
       public AnimationFrameTimingMonitor::Client,
       public WidgetEventHandler {
  public:
+  void UpdatePageActiveState();
   struct PromiseCallbacks {
     base::OnceCallback<void(base::TimeTicks)> swap_time_callback;
     base::OnceCallback<void(const viz::FrameTimingDetails&)>
@@ -864,6 +865,7 @@ class CORE_EXPORT WebFrameWidgetImpl
   void DragSourceSystemDragEnded() override;
   void SetBackgroundOpaque(bool opaque) override;
   void SetActive(bool active) override;
+  
   // For both mainframe and childframe change the text direction of the
   // currently selected input field (if any).
   void SetTextDirection(base::i18n::TextDirection direction) override;
@@ -1114,6 +1116,7 @@ class CORE_EXPORT WebFrameWidgetImpl
   // passed to any new child RenderWidget.
   float page_scale_factor_in_mainframe_ = 1.f;
   bool is_pinch_gesture_active_in_mainframe_ = false;
+  bool is_browser_active_ = false;
 
   bool is_scroll_gesture_active_ = false;
 

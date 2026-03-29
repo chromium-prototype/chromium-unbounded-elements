@@ -943,7 +943,23 @@ gfx::Size WebFrameWidgetImpl::DIPsToCeiledBlinkSpace(const gfx::Size& size) {
 }
 
 void WebFrameWidgetImpl::SetActive(bool active) {
-  View()->SetIsActive(active);
+  is_browser_active_ = active;
+  UpdatePageActiveState();
+}
+
+void WebFrameWidgetImpl::UpdatePageActiveState() {
+  bool should_be_active = is_browser_active_;
+  if (!should_be_active && local_root_ && local_root_->GetFrame()) {
+    if (auto* document = local_root_->GetFrame()->GetDocument()) {
+      for (auto panel : document->UnboundedPanels()) {
+        if (panel->GetWidget() && panel->GetWidget()->IsActive()) {
+          should_be_active = true;
+          break;
+        }
+      }
+    }
+  }
+  View()->SetIsActive(should_be_active);
 }
 
 WebInputEventResult WebFrameWidgetImpl::HandleKeyEvent(

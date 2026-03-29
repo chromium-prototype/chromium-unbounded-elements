@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include "third_party/blink/renderer/core/html/unbounded_panel_widget.h"
+#include "third_party/blink/renderer/core/frame/web_frame_widget_impl.h"
 #include "cc/trees/property_ids.h"
 
 #include "third_party/blink/public/mojom/frame/frame.mojom-blink.h"
@@ -352,14 +353,14 @@ void UnboundedPanelWidget::FocusChanged(mojom::blink::FocusState focus_state) {
                    (focus_state == mojom::blink::FocusState::kNotFocusedAndActive);
   bool is_focused = (focus_state == mojom::blink::FocusState::kFocused);
 
-  // When the UnboundedPanelWidget gains focus, we MUST force the page's focus controller
-  // to believe it is active so the caret can blink within the panel.
-  // We do NOT want to blindly blur the page if the panel loses focus, because the main window
-  // might still be actively focused without us knowing. The main window's WebFrameWidgetImpl 
-  // will correctly receive blur events from the browser process if the entire app is blurred.
-  if (is_active) {
-    page->GetFocusController().SetActive(true);
+  is_active_ = is_active;
+
+  if (auto* frame = document.GetFrame()) {
+    if (auto* frame_widget = static_cast<WebFrameWidgetImpl*>(frame->GetWidgetForLocalRoot())) {
+      frame_widget->UpdatePageActiveState();
+    }
   }
+
   if (is_focused) {
     page->GetFocusController().SetFocused(true);
   } else if (!is_active) {

@@ -76,9 +76,11 @@ class CORE_EXPORT UnboundedPanelWidget final
   bool HasDisplayItemsForTesting() const { return true; }
   void SetNeedsMouseCapture(bool capture);
   void DidChangeCursor(const ui::Cursor& cursor);
+  bool IsActive() const { return is_active_; }
   const std::optional<ui::Cursor>& last_cursor_for_testing() const { return last_cursor_for_testing_; }
 
  private:
+  bool is_active_ = false;
   bool is_mouse_button_down_ = false;
   std::optional<ui::Cursor> last_cursor_for_testing_;
   void WidgetHostDisconnected();
