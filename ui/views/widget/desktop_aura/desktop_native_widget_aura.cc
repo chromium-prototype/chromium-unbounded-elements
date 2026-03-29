@@ -116,9 +116,8 @@ class DesktopNativeWidgetTopLevelHandler : public aura::WindowObserver {
 
     Widget::InitParams init_params(
         Widget::InitParams::NATIVE_WIDGET_OWNS_WIDGET,
-        full_screen ? Widget::InitParams::TYPE_WINDOW
+        (full_screen || is_frameless) ? Widget::InitParams::TYPE_WINDOW
         : is_menu   ? Widget::InitParams::TYPE_MENU
-        : is_frameless ? Widget::InitParams::TYPE_WINDOW_FRAMELESS
                     : Widget::InitParams::TYPE_POPUP);
 
 #if BUILDFLAG(IS_WIN)
@@ -128,9 +127,13 @@ class DesktopNativeWidgetTopLevelHandler : public aura::WindowObserver {
       init_params.remove_standard_frame = true;
     }
 #endif
+    if (is_frameless) {
+      init_params.remove_standard_frame = true;
+    }
+
     init_params.bounds = bounds;
     init_params.layer_type = ui::LAYER_NOT_DRAWN;
-    init_params.activatable = full_screen
+    init_params.activatable = (full_screen || is_frameless)
                                   ? Widget::InitParams::Activatable::kYes
                                   : Widget::InitParams::Activatable::kNo;
     init_params.z_order = root_z_order;

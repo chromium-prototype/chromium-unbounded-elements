@@ -1,3 +1,4 @@
+#include "ui/views/widget/widget.h"
 #include "ui/aura/window.h"
 #include "ui/aura/client/transient_window_client.h"
 #include "base/threading/platform_thread.h"
@@ -890,6 +891,10 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, UnboundedPanelZOrder) {
   aura::Window* native_window = popup_view->GetNativeView();
   ASSERT_TRUE(native_window);
   EXPECT_EQ(native_window->GetType(), aura::client::WINDOW_TYPE_NORMAL);
+
+  views::Widget* top_level_widget = views::Widget::GetTopLevelWidgetForNativeView(native_window);
+  ASSERT_TRUE(top_level_widget);
+  EXPECT_EQ(top_level_widget->GetNativeView()->GetType(), aura::client::WINDOW_TYPE_NORMAL);
 
   aura::client::TransientWindowClient* transient_client =
       aura::client::GetTransientWindowClient();
