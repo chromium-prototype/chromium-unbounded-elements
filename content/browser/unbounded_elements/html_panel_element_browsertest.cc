@@ -1,4 +1,5 @@
 #include "ui/aura/window.h"
+#include "ui/aura/client/transient_window_client.h"
 #include "base/threading/platform_thread.h"
 #include "base/run_loop.h"
 // Copyright 2026 The Chromium Authors
@@ -888,6 +889,15 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, UnboundedPanelZOrder) {
   aura::Window* native_window = popup_view->GetNativeView();
   ASSERT_TRUE(native_window);
   EXPECT_EQ(native_window->GetType(), aura::client::WINDOW_TYPE_NORMAL);
+
+  aura::client::TransientWindowClient* transient_client =
+      aura::client::GetTransientWindowClient();
+  ASSERT_TRUE(transient_client);
+  
+  // Verify that the panel is a transient child of the main WebContents window.
+  // This guarantees the OS will always keep the panel visually above the browser.
+  aura::Window* main_contents_window = contents->GetRenderWidgetHostView()->GetNativeView();
+  EXPECT_EQ(transient_client->GetTransientParent(native_window), main_contents_window);
 #endif
 }
 
