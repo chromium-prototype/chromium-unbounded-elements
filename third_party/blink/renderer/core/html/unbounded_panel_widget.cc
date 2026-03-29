@@ -209,7 +209,10 @@ void UnboundedPanelWidget::UpdateLifecycle(WebLifecycleUpdate requested_update, 
 
   auto* panel_layout = To<LayoutBox>(layout_object);
 
-  PaintController paint_controller(false, nullptr);
+  if (!paint_controller_persistent_data_) {
+    paint_controller_persistent_data_ = MakeGarbageCollected<PaintControllerPersistentData>();
+  }
+  PaintController paint_controller(false, paint_controller_persistent_data_.Get());
   paint_controller.UpdateCurrentPaintChunkProperties(layout_object->FirstFragment().LocalBorderBoxProperties());
 
   GraphicsContext context(paint_controller);
@@ -411,6 +414,7 @@ void UnboundedPanelWidget::SetNeedsMouseCapture(bool capture) {
 }
 
 void UnboundedPanelWidget::DidChangeCursor(const ui::Cursor& cursor) {
+  std::optional<ui::Cursor> old_cursor = last_cursor_for_testing_;
   last_cursor_for_testing_ = cursor;
   
   // Suppress cursor updates if the mouse button is down (dragging).
@@ -418,8 +422,9 @@ void UnboundedPanelWidget::DidChangeCursor(const ui::Cursor& cursor) {
   // browser window when it has implicit mouse capture. Since popups
   // don't always get OS capture automatically, we enforce the visual
   // text-selection caret consistency here.
-  if (is_mouse_button_down_ && cursor.type() == ui::mojom::CursorType::kPointer) {
-    return;
+  if (is_mouse_button_down_ && old_cursor && old_cursor->type() == ui::mojom::CursorType::kIBeam && cursor.type() == ui::mojom::CursorType::kPointer) {
+     last_cursor_for_testing_ = *old_cursor;
+     return;
   }
 
   if (widget_base_) {
