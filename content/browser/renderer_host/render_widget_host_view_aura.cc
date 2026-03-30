@@ -264,9 +264,10 @@ class RenderWidgetHostViewAura::EventObserverForPopupExit
 
 void RenderWidgetHostViewAura::ApplyEventObserverForPopupExit(
     const ui::LocatedEvent& event) {
-  // Temporarily disabled to prevent UnboundedPanel from closing on outside click
+  // Temporarily disabled to prevent UnboundedPanel from closing on outside
+  // click
   return;
-  
+
   CHECK(event.type() == ui::EventType::kMousePressed ||
         event.type() == ui::EventType::kTouchPressed);
 
@@ -335,11 +336,17 @@ class RenderWidgetHostViewAura::WindowObserver : public aura::WindowObserver {
   raw_ptr<RenderWidgetHostViewAura> view_;
 };
 
-class RenderWidgetHostViewAura::TransientParentWindowObserver : public aura::WindowTreeHostObserver, public aura::WindowObserver {
+class RenderWidgetHostViewAura::TransientParentWindowObserver
+    : public aura::WindowTreeHostObserver,
+      public aura::WindowObserver {
  public:
-  explicit TransientParentWindowObserver(RenderWidgetHostViewAura* view, aura::WindowTreeHost* host, aura::Window* popup_parent)
+  explicit TransientParentWindowObserver(RenderWidgetHostViewAura* view,
+                                         aura::WindowTreeHost* host,
+                                         aura::Window* popup_parent)
       : view_(view), host_(host), popup_parent_(popup_parent) {
-    if (popup_parent_) popup_parent_->AddObserver(this);
+    if (popup_parent_) {
+      popup_parent_->AddObserver(this);
+    }
     if (host_) {
       host_->AddObserver(this);
       last_bounds_in_pixels_ = host_->GetBoundsInPixels();
@@ -347,11 +354,16 @@ class RenderWidgetHostViewAura::TransientParentWindowObserver : public aura::Win
   }
 
   TransientParentWindowObserver(const TransientParentWindowObserver&) = delete;
-  TransientParentWindowObserver& operator=(const TransientParentWindowObserver&) = delete;
+  TransientParentWindowObserver& operator=(
+      const TransientParentWindowObserver&) = delete;
 
   ~TransientParentWindowObserver() override {
-    if (popup_parent_) popup_parent_->RemoveObserver(this);
-    if (host_) host_->RemoveObserver(this);
+    if (popup_parent_) {
+      popup_parent_->RemoveObserver(this);
+    }
+    if (host_) {
+      host_->RemoveObserver(this);
+    }
   }
 
   void OnHostMovedInPixels(aura::WindowTreeHost* host) override {
@@ -360,12 +372,12 @@ class RenderWidgetHostViewAura::TransientParentWindowObserver : public aura::Win
       int dx_pixels = new_bounds_in_pixels.x() - last_bounds_in_pixels_.x();
       int dy_pixels = new_bounds_in_pixels.y() - last_bounds_in_pixels_.y();
       last_bounds_in_pixels_ = new_bounds_in_pixels;
-      
+
       // Ignore huge startup WM layout jumps before user interaction
       if (std::abs(dx_pixels) > 200 || std::abs(dy_pixels) > 200) {
         return;
       }
-      
+
       if (dx_pixels != 0 || dy_pixels != 0) {
         aura::WindowTreeHost* popup_host = view_->window_->GetHost();
         gfx::Rect bounds_in_pixels = popup_host->GetBoundsInPixels();
@@ -385,7 +397,6 @@ class RenderWidgetHostViewAura::TransientParentWindowObserver : public aura::Win
       }
     }
   }
-
 
  private:
   raw_ptr<RenderWidgetHostViewAura> view_;
@@ -488,7 +499,8 @@ void RenderWidgetHostViewAura::InitAsPopup(
     RenderWidgetHostView* parent_host_view,
     const gfx::Rect& bounds_in_screen,
     const gfx::Rect& anchor_rect) {
-  CHECK(widget_type_ == WidgetType::kPopup || widget_type_ == WidgetType::kUnboundedPanel);
+  CHECK(widget_type_ == WidgetType::kPopup ||
+        widget_type_ == WidgetType::kUnboundedPanel);
   CHECK(!static_cast<RenderWidgetHostViewBase*>(parent_host_view)
              ->IsRenderWidgetHostViewChildFrame());
 
@@ -567,9 +579,12 @@ void RenderWidgetHostViewAura::InitAsPopup(
   ObserveDevicePosturePlatformProvider();
 #endif
 
-  if (widget_type_ == WidgetType::kUnboundedPanel && popup_parent_host_view_->window_) {
-    transient_parent_observer_ = std::make_unique<TransientParentWindowObserver>(
-        this, popup_parent_host_view_->window_->GetHost(), popup_parent_host_view_->window_);
+  if (widget_type_ == WidgetType::kUnboundedPanel &&
+      popup_parent_host_view_->window_) {
+    transient_parent_observer_ =
+        std::make_unique<TransientParentWindowObserver>(
+            this, popup_parent_host_view_->window_->GetHost(),
+            popup_parent_host_view_->window_);
   }
 }
 
@@ -1222,7 +1237,8 @@ RenderWidgetHostViewAura::GetParentNativeViewAccessible() {
   // If a popup_parent_host_view_ exists, that means we are in a popup (such as
   // datetime) and our accessible parent window is popup_parent_host_view_
   if (popup_parent_host_view_) {
-    CHECK(widget_type_ == WidgetType::kPopup || widget_type_ == WidgetType::kUnboundedPanel);
+    CHECK(widget_type_ == WidgetType::kPopup ||
+          widget_type_ == WidgetType::kUnboundedPanel);
     return popup_parent_host_view_->GetParentNativeViewAccessible();
   }
 
@@ -3621,10 +3637,10 @@ void RenderWidgetHostViewAura::ForwardArabicIndicCharEventWithLatencyInfo(
 }
 #endif  // BUILDFLAG(IS_WIN)
 
-
-
 void RenderWidgetHostViewAura::SetNeedsMouseCapture(bool capture) {
-  if (!window_) return;
+  if (!window_) {
+    return;
+  }
   if (capture) {
     window_->SetCapture();
   } else {

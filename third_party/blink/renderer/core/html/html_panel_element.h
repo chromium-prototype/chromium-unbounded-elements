@@ -13,7 +13,8 @@ namespace blink {
 
 class UnboundedPanelWidget;
 
-class CORE_EXPORT HTMLPanelElement : public HTMLElement, public PageVisibilityObserver {
+class CORE_EXPORT HTMLPanelElement : public HTMLElement,
+                                     public PageVisibilityObserver {
   DEFINE_WRAPPERTYPEINFO();
 
  public:

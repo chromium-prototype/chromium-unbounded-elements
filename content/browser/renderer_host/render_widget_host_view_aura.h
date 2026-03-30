@@ -597,7 +597,7 @@ class CONTENT_EXPORT RenderWidgetHostViewAura
 
   class WindowObserver;
   friend class WindowObserver;
-  
+
   class TransientParentWindowObserver;
   friend class TransientParentWindowObserver;
 

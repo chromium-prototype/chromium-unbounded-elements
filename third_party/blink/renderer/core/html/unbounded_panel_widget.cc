@@ -20,6 +20,7 @@
 #include "third_party/blink/renderer/core/frame/local_frame_client.h"
 #include "third_party/blink/renderer/core/frame/local_frame_view.h"
 #include "third_party/blink/renderer/core/frame/web_frame_widget_impl.h"
+#include "third_party/blink/renderer/core/frame/web_local_frame_impl.h"
 #include "third_party/blink/renderer/core/html/html_panel_element.h"
 #include "third_party/blink/renderer/core/html_names.h"
 #include "third_party/blink/renderer/core/layout/layout_box.h"
@@ -245,6 +246,16 @@ void UnboundedPanelWidget::UpdateLifecycle(WebLifecycleUpdate requested_update,
 
   PaintLayerPainter(*panel_layout->Layer())
       .Paint(context, PaintFlag::kPaintingUnboundedPanel);
+
+  if (auto* web_local_frame_impl = WebLocalFrameImpl::FromFrame(
+          owner_element_->GetDocument().GetFrame())) {
+    web_local_frame_impl->PaintDevToolsOverlays(context);
+  }
+
+  if (auto* web_local_frame_impl = WebLocalFrameImpl::FromFrame(
+          owner_element_->GetDocument().GetFrame())) {
+    web_local_frame_impl->PaintDevToolsOverlays(context);
+  }
 
   const PaintArtifact& artifact = paint_controller.CommitNewDisplayItems();
 

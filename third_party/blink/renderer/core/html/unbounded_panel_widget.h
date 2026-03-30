@@ -5,21 +5,22 @@
 #ifndef THIRD_PARTY_BLINK_RENDERER_CORE_HTML_UNBOUNDED_PANEL_WIDGET_H_
 #define THIRD_PARTY_BLINK_RENDERER_CORE_HTML_UNBOUNDED_PANEL_WIDGET_H_
 
+#include <optional>
+
+#include "mojo/public/cpp/bindings/pending_associated_receiver.h"
 #include "third_party/blink/public/mojom/page/widget.mojom-blink.h"
-#include "third_party/blink/renderer/platform/widget/widget_base_client.h"
-#include "third_party/blink/renderer/platform/widget/widget_base.h"
 #include "third_party/blink/public/mojom/widget/platform_widget.mojom-blink.h"
 #include "third_party/blink/renderer/core/core_export.h"
+#include "third_party/blink/renderer/platform/graphics/paint/display_item_client.h"
+#include "third_party/blink/renderer/platform/graphics/paint/paint_controller.h"
 #include "third_party/blink/renderer/platform/heap/garbage_collected.h"
 #include "third_party/blink/renderer/platform/heap/member.h"
 #include "third_party/blink/renderer/platform/heap/prefinalizer.h"
 #include "third_party/blink/renderer/platform/mojo/heap_mojo_associated_remote.h"
-#include "mojo/public/cpp/bindings/pending_associated_receiver.h"
-#include "third_party/blink/renderer/platform/graphics/paint/paint_controller.h"
-#include "third_party/blink/renderer/platform/graphics/paint/display_item_client.h"
-#include "ui/gfx/geometry/rect.h"
+#include "third_party/blink/renderer/platform/widget/widget_base.h"
+#include "third_party/blink/renderer/platform/widget/widget_base_client.h"
 #include "ui/base/cursor/cursor.h"
-#include <optional>
+#include "ui/gfx/geometry/rect.h"
 
 namespace blink {
 
@@ -54,8 +55,7 @@ class CORE_EXPORT UnboundedPanelWidget final
   std::unique_ptr<cc::LayerTreeFrameSink> AllocateNewLayerTreeFrameSink()
       override;
   WebInputEventResult DispatchBufferedTouchEvents() override;
-  WebInputEventResult HandleInputEvent(
-      const WebCoalescedInputEvent&) override;
+  WebInputEventResult HandleInputEvent(const WebCoalescedInputEvent&) override;
   bool SupportsBufferedTouchEvents() override;
   void WillHandleGestureEvent(const WebGestureEvent& event,
                               bool* suppress) override;
@@ -72,13 +72,14 @@ class CORE_EXPORT UnboundedPanelWidget final
   gfx::Rect ViewportVisibleRect() override;
   KURL GetURLForDebugTrace() override;
 
-
   bool HasDisplayItemsForTesting() const { return true; }
   void SetNeedsMouseCapture(bool capture);
   void DidChangeCursor(const ui::Cursor& cursor);
   bool IsActive() const { return is_active_; }
   bool IsFocused() const { return is_focused_; }
-  const std::optional<ui::Cursor>& last_cursor_for_testing() const { return last_cursor_for_testing_; }
+  const std::optional<ui::Cursor>& last_cursor_for_testing() const {
+    return last_cursor_for_testing_;
+  }
 
  private:
   bool is_active_ = false;

@@ -5,11 +5,11 @@
 #include "third_party/blink/renderer/core/html/html_panel_element.h"
 
 #include "third_party/blink/renderer/core/dom/document.h"
+#include "third_party/blink/renderer/core/dom/events/event.h"
 #include "third_party/blink/renderer/core/frame/local_frame.h"
 #include "third_party/blink/renderer/core/html/unbounded_panel_widget.h"
 #include "third_party/blink/renderer/core/html_names.h"
 #include "third_party/blink/renderer/core/layout/layout_unbounded_panel.h"
-#include "third_party/blink/renderer/core/dom/events/event.h"
 #include "third_party/blink/renderer/core/page/page.h"
 
 namespace blink {
@@ -38,8 +38,10 @@ Node::InsertionNotificationRequest HTMLPanelElement::InsertedInto(
 }
 
 void HTMLPanelElement::PageVisibilityChanged() {
-  if (!GetPage()) return;
-  
+  if (!GetPage()) {
+    return;
+  }
+
   if (GetPage()->IsPageVisible()) {
     if (isConnected() && !widget_) {
       widget_ = MakeGarbageCollected<UnboundedPanelWidget>(this);
@@ -89,8 +91,8 @@ void HTMLPanelElement::Trace(Visitor* visitor) const {
   PageVisibilityObserver::Trace(visitor);
 }
 
-
-void HTMLPanelElement::AttributeChanged(const AttributeModificationParams& params) {
+void HTMLPanelElement::AttributeChanged(
+    const AttributeModificationParams& params) {
   if (params.name == html_names::kCaptureAttr) {
     if (widget_) {
       widget_->SetNeedsMouseCapture(FastHasAttribute(html_names::kCaptureAttr));

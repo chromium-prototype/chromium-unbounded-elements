@@ -25,8 +25,6 @@
  */
 
 #include "third_party/blink/renderer/core/frame/local_frame_view.h"
-#include "third_party/blink/renderer/core/html/html_panel_element.h"
-#include "third_party/blink/renderer/core/html/unbounded_panel_widget.h"
 
 #include <algorithm>
 #include <memory>
@@ -3177,8 +3175,6 @@ void LocalFrameView::PaintTree(
           paint_controller_persistent_data_->GetPaintArtifact());
     }
   }
-
-
 
   visual_viewport_or_overlay_needs_repaint_ = false;
 

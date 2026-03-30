@@ -117,8 +117,8 @@ class DesktopNativeWidgetTopLevelHandler : public aura::WindowObserver {
     Widget::InitParams init_params(
         Widget::InitParams::NATIVE_WIDGET_OWNS_WIDGET,
         (full_screen || is_frameless) ? Widget::InitParams::TYPE_WINDOW
-        : is_menu   ? Widget::InitParams::TYPE_MENU
-                    : Widget::InitParams::TYPE_POPUP);
+        : is_menu                     ? Widget::InitParams::TYPE_MENU
+                                      : Widget::InitParams::TYPE_POPUP);
 
 #if BUILDFLAG(IS_WIN)
     // For menus, on Windows versions that support drop shadow remove
@@ -248,8 +248,9 @@ class DesktopNativeWidgetAuraWindowParentingClient
     bool is_fullscreen = window->GetProperty(aura::client::kShowStateKey) ==
                          ui::mojom::WindowShowState::kFullscreen;
     bool is_menu = window->GetType() == aura::client::WINDOW_TYPE_MENU;
-    bool is_frameless = window->GetProperty(aura::client::kRemoveStandardFrame) &&
-                        window->GetType() == aura::client::WINDOW_TYPE_NORMAL;
+    bool is_frameless =
+        window->GetProperty(aura::client::kRemoveStandardFrame) &&
+        window->GetType() == aura::client::WINDOW_TYPE_NORMAL;
 
     if (is_fullscreen || is_menu || is_frameless) {
       ui::ZOrderLevel root_z_order = ui::ZOrderLevel::kNormal;

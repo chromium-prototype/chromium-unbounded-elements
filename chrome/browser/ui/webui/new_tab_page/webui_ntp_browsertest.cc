@@ -6,11 +6,14 @@
 #include <set>
 #include <string>
 
+#include "base/files/file_util.h"
+#include "base/run_loop.h"
 #include "base/stl_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/test/mock_callback.h"
 #include "base/test/run_until.h"
 #include "base/test/scoped_feature_list.h"
+#include "base/threading/thread_restrictions.h"
 #include "chrome/browser/preloading/scoped_prewarm_feature_list.h"
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/ui/browser.h"
@@ -24,23 +27,19 @@
 #include "components/ntp_tiles/tile_type.h"
 #include "components/prefs/pref_service.h"
 #include "components/search/ntp_features.h"
+#include "components/viz/common/frame_sinks/copy_output_result.h"
 #include "content/public/browser/render_process_host.h"
+#include "content/public/browser/render_widget_host.h"
+#include "content/public/browser/render_widget_host_iterator.h"
+#include "content/public/browser/render_widget_host_view.h"
 #include "content/public/browser/spare_render_process_host_manager.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/child_process_id.h"
 #include "content/public/test/browser_test.h"
 #include "content/public/test/browser_test_utils.h"
 #include "net/dns/mock_host_resolver.h"
-#include "content/public/browser/render_widget_host.h"
-#include "content/public/browser/render_widget_host_iterator.h"
-#include "content/public/browser/render_widget_host_view.h"
-
-#include "ui/gfx/codec/png_codec.h"
-#include "base/files/file_util.h"
-#include "base/run_loop.h"
-#include "base/threading/thread_restrictions.h"
 #include "third_party/skia/include/core/SkBitmap.h"
-#include "components/viz/common/frame_sinks/copy_output_result.h"
+#include "ui/gfx/codec/png_codec.h"
 namespace {
 
 // Observes TabStripModelChange::kRemoved notifications and records the
@@ -172,7 +171,12 @@ IN_PROC_BROWSER_TEST_F(WebUiNtpBrowserTest, PanelWidgetShows) {
   // Wait for the ntp-app to load and render the panel.
   bool panel_exists = false;
   ASSERT_TRUE(base::test::RunUntil([&]() {
-    auto result = content::EvalJs(web_contents, "!!document.querySelector('ntp-app') && !!document.querySelector('ntp-app').shadowRoot && !!document.querySelector('ntp-app').shadowRoot.querySelector('panel')");
+    auto result =
+        content::EvalJs(web_contents,
+                        "!!document.querySelector('ntp-app') && "
+                        "!!document.querySelector('ntp-app').shadowRoot && "
+                        "!!document.querySelector('ntp-app').shadowRoot."
+                        "querySelector('panel')");
     if (!result.error.empty()) {
       LOG(ERROR) << "EvalJs error: " << result.error;
       return false;
@@ -184,14 +188,18 @@ IN_PROC_BROWSER_TEST_F(WebUiNtpBrowserTest, PanelWidgetShows) {
   EXPECT_TRUE(panel_exists);
 
   // Trigger a relayout and render to ensure IPC is dispatched
-  auto raf_result = content::EvalJs(web_contents, "new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve(true))));");
+  auto raf_result =
+      content::EvalJs(web_contents,
+                      "new Promise(resolve => requestAnimationFrame(() => "
+                      "requestAnimationFrame(() => resolve(true))));");
   if (!raf_result.error.empty()) {
     LOG(ERROR) << "raf EvalJs error: " << raf_result.error;
   }
   EXPECT_TRUE(raf_result.ExtractBool());
 
   int popup_count = 0;
-  content::RenderProcessHost* process = web_contents->GetPrimaryMainFrame()->GetProcess();
+  content::RenderProcessHost* process =
+      web_contents->GetPrimaryMainFrame()->GetProcess();
   std::unique_ptr<content::RenderWidgetHostIterator> widgets(
       content::RenderWidgetHost::GetRenderWidgetHosts());
   while (content::RenderWidgetHost* widget = widgets->GetNextHost()) {
@@ -202,7 +210,7 @@ IN_PROC_BROWSER_TEST_F(WebUiNtpBrowserTest, PanelWidgetShows) {
       EXPECT_TRUE(view);
       if (view) {
         EXPECT_TRUE(view->IsShowing());
-        
+
         base::RunLoop run_loop;
         view->CopyFromSurface(
             gfx::Rect(), gfx::Size(),
@@ -214,7 +222,8 @@ IN_PROC_BROWSER_TEST_F(WebUiNtpBrowserTest, PanelWidgetShows) {
                     std::vector<unsigned char> data;
                     if (gfx::PNGCodec::EncodeBGRASkBitmap(result.value().bitmap,
                                                           false, &data)) {
-                      base::WriteFile(base::FilePath("popup_raw_pixels.png"), data);
+                      base::WriteFile(base::FilePath("popup_raw_pixels.png"),
+                                      data);
                     }
                   }
                   std::move(quit).Run();
@@ -225,9 +234,9 @@ IN_PROC_BROWSER_TEST_F(WebUiNtpBrowserTest, PanelWidgetShows) {
     }
   }
 
-  EXPECT_GT(popup_count, 0) << "No secondary RenderWidgetHost was created for the panel!";
+  EXPECT_GT(popup_count, 0)
+      << "No secondary RenderWidgetHost was created for the panel!";
 }
-
 
 // Verify that the WebUI NTP uses an available spare process and does not
 // discard it as in https://crbug.com/1094088.

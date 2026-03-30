@@ -1069,7 +1069,9 @@ bool LayerTreeHost::DoUpdateLayers() {
   // nodes.
   for (auto* layer : *this) {
     if (!property_trees()->effect_tree().Node(layer->effect_tree_index())) {
-      LOG(ERROR) << "FAIL EFFECT: layer=" << layer->id() << " " << layer->DebugName() << " index=" << layer->effect_tree_index();
+      LOG(ERROR) << "FAIL EFFECT: layer=" << layer->id() << " "
+                 << layer->DebugName()
+                 << " index=" << layer->effect_tree_index();
     }
     DCHECK(property_trees()->effect_tree().Node(layer->effect_tree_index()));
     DCHECK(

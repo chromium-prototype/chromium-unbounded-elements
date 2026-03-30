@@ -6,12 +6,12 @@
 
 #include "testing/gtest/include/gtest/gtest.h"
 #include "third_party/blink/renderer/core/dom/document.h"
+#include "third_party/blink/renderer/core/frame/web_frame_widget_impl.h"
 #include "third_party/blink/renderer/core/html/html_body_element.h"
 #include "third_party/blink/renderer/core/html/unbounded_panel_widget.h"
 #include "third_party/blink/renderer/core/html_names.h"
 #include "third_party/blink/renderer/core/layout/layout_object.h"
 #include "third_party/blink/renderer/core/testing/page_test_base.h"
-#include "third_party/blink/renderer/core/frame/web_frame_widget_impl.h"
 
 namespace blink {
 
@@ -40,7 +40,9 @@ TEST_F(HTMLPanelElementTest, WidgetLifecycle) {
 
 TEST_F(HTMLPanelElementTest, SecondaryWidgetIsPainted) {
   auto* panel = MakeGarbageCollected<HTMLPanelElement>(GetDocument());
-  panel->setAttribute(html_names::kStyleAttr, AtomicString("width: 100px; height: 100px; background: red;"));
+  panel->setAttribute(
+      html_names::kStyleAttr,
+      AtomicString("width: 100px; height: 100px; background: red;"));
   GetDocument().FirstBodyElement()->AppendChild(panel);
   UpdateAllLifecyclePhasesForTest();
 
@@ -61,14 +63,16 @@ TEST_F(HTMLPanelElementTest, CursorMappingPropagatesToSecondaryWidget) {
   EXPECT_FALSE(widget->last_cursor_for_testing().has_value());
 
   ui::Cursor pointer_cursor(ui::mojom::CursorType::kPointer);
-  
+
   // Simulate the main WebFrameWidgetImpl intercepting a new cursor
   // and natively issuing the broadcast event to document unbounded panels.
   widget->DidChangeCursor(pointer_cursor);
 
-  // The secondary widget should have instantly received and stored the propagated cursor
+  // The secondary widget should have instantly received and stored the
+  // propagated cursor
   ASSERT_TRUE(widget->last_cursor_for_testing().has_value());
-  EXPECT_EQ(widget->last_cursor_for_testing()->type(), ui::mojom::CursorType::kPointer);
+  EXPECT_EQ(widget->last_cursor_for_testing()->type(),
+            ui::mojom::CursorType::kPointer);
 }
 
 }  // namespace blink
