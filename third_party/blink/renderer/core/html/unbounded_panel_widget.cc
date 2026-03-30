@@ -45,6 +45,7 @@
 #include "third_party/blink/renderer/platform/wtf/text/atomic_string.h"
 #include "ui/display/screen_infos.h"
 #include "ui/gfx/geometry/transform.h"
+#include "v8/include/v8-microtask-queue.h"
 
 namespace blink {
 
@@ -249,6 +250,13 @@ void UnboundedPanelWidget::UpdateLifecycle(WebLifecycleUpdate requested_update,
 
   if (auto* web_local_frame_impl = WebLocalFrameImpl::FromFrame(
           owner_element_->GetDocument().GetFrame())) {
+    v8::Isolate* isolate =
+        owner_element_->GetDocument().GetExecutionContext()->GetIsolate();
+    v8::MicrotaskQueue* microtask_queue = isolate->GetCurrentContext().IsEmpty() ? nullptr : isolate->GetCurrentContext()->GetMicrotaskQueue();
+    std::optional<v8::MicrotasksScope> microtasks_scope;
+    if (microtask_queue) {
+      microtasks_scope.emplace(isolate, microtask_queue, v8::MicrotasksScope::kDoNotRunMicrotasks);
+    }
     web_local_frame_impl->PaintDevToolsOverlays(context);
   }
 
