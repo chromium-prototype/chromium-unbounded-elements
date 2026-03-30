@@ -259,7 +259,8 @@ void UnboundedPanelWidget::UpdateLifecycle(WebLifecycleUpdate requested_update,
       microtasks_scope.emplace(isolate, microtask_queue, v8::MicrotasksScope::kDoNotRunMicrotasks);
     }
     
-if (owner_element_->GetDocument().Lifecycle().GetState() >= DocumentLifecycle::kPrePaintClean) {
+    if (owner_element_->GetDocument().Lifecycle().GetState() >= DocumentLifecycle::kPrePaintClean &&
+        !owner_element_->GetDocument().NeedsLayoutTreeUpdate()) {
       web_local_frame_impl->PaintDevToolsOverlays(context);
     }
   }

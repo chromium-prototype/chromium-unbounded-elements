@@ -1325,4 +1325,37 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, DevToolsOverlayPaintNoCrash)
   agent_host->DetachClient(&client_host);
 }
 
+IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, DevToolsOverlayPaintSophisticatedPanelNoCrash) {
+  ASSERT_TRUE(embedded_test_server()->Start());
+
+  GURL test_url("data:text/html;base64,PCFET0NUWVBFIGh0bWw+CjxodG1sIGNsYXNzPSJyZWZ0ZXN0LXdhaXQiPgo8dGl0bGU+VW5ib3VuZGVkIEVsZW1lbnRzOiBQYW5lbCBwYWludCBzb3BoaXN0aWNhdGVkPC90aXRsZT4KPGxpbmsgcmVsPSJtYXRjaCIgaHJlZj0icGFuZWwtcGFpbnQtc29waGlzdGljYXRlZC1leHBlY3RlZC5odG1sIj4KPHN0eWxlPgogIGJvZHkgewogICAgbWFyZ2luOiAwOwogICAgYmFja2dyb3VuZDogZ3JlZW47CiAgfQogIHBhbmVsIHsKICAgIHdpZHRoOiA0MDBweDsKICAgIGhlaWdodDogMzAwcHg7CiAgICBwb3NpdGlvbjogZml4ZWQ7CiAgICB0b3A6IDQwMHB4OwogICAgbGVmdDogNDAwcHg7CiAgICBiYWNrZ3JvdW5kOiBsaW5lYXItZ3JhZGllbnQoMTM1ZGVnLCAjMWUzYzcyLCAjMmE1Mjk4KTsKICAgIGJvcmRlci1yYWRpdXM6IDEycHg7CiAgICBib3gtc2hhZG93OiAwIDEwcHggMjBweCByZ2JhKDAsMCwwLDAuNSk7CiAgICBkaXNwbGF5OiBmbGV4OwogICAgZmxleC1kaXJlY3Rpb246IGNvbHVtbjsKICAgIGFsaWduLWl0ZW1zOiBjZW50ZXI7CiAgICBqdXN0aWZ5LWNvbnRlbnQ6IGNlbnRlcjsKICAgIGNvbG9yOiB3aGl0ZTsKICAgIGZvbnQtZmFtaWx5OiBzYW5zLXNlcmlmOwogIH0KICAuaWNvbiB7CiAgICB3aWR0aDogNjRweDsKICAgIGhlaWdodDogNjRweDsKICAgIGJhY2tncm91bmQ6ICNmZmNjMDA7CiAgICBib3JkZXItcmFkaXVzOiA1MCU7CiAgICBtYXJnaW4tYm90dG9tOiAxNnB4OwogICAgZGlzcGxheTogZmxleDsKICAgIGFsaWduLWl0ZW1zOiBjZW50ZXI7CiAgICBqdXN0aWZ5LWNvbnRlbnQ6IGNlbnRlcjsKICAgIGNvbG9yOiAjMzMzOwogICAgZm9udC13ZWlnaHQ6IGJvbGQ7CiAgICBmb250LXNpemU6IDI0cHg7CiAgfQogIGgxIHsKICAgIG1hcmdpbjogMCAwIDhweCAwOwogICAgZm9udC1zaXplOiAyNHB4OwogIH0KICBwIHsKICAgIG1hcmdpbjogMDsKICAgIGZvbnQtc2l6ZTogMTRweDsKICAgIG9wYWNpdHk6IDAuODsKICB9Cjwvc3R5bGU+Cjxib2R5PgogIDxwYW5lbD4KICAgIDxkaXYgY2xhc3M9Imljb24iPuKYhTwvZGl2PgogICAgPGgxPlByZW1pdW0gVW5ib3VuZGVkIFdpZGdldDwvaDE+CiAgICA8cD5UaGlzIHBhbmVsIGV4ZXJjaXNlcyBjb21wbGV4IENTUyByZW5kZXJpbmcuPC9wPgogIDwvcGFuZWw+CiAgPHNjcmlwdD4KICAgIHJlcXVlc3RBbmltYXRpb25GcmFtZSgoKSA9PiB7CiAgICAgIGRvY3VtZW50LmRvY3VtZW50RWxlbWVudC5jbGFzc0xpc3QucmVtb3ZlKCdyZWZ0ZXN0LXdhaXQnKTsKICAgIH0pOwogIDwvc2NyaXB0Pgo8L2JvZHk+CjwvaHRtbD4K");
+  auto* contents = static_cast<WebContentsImpl*>(shell()->web_contents());
+  EXPECT_TRUE(NavigateToURL(shell(), test_url));
+  WaitForLoadStop(contents);
+
+  RenderFrameHostImpl* root_frame_host =
+      contents->GetPrimaryFrameTree().root()->current_frame_host();
+
+  scoped_refptr<DevToolsAgentHost> agent_host = DevToolsAgentHost::GetOrCreateFor(contents);
+  TestDevToolsClientHost client_host;
+  agent_host->AttachClient(&client_host);
+
+  client_host.SendMessageAndWait(agent_host.get(), 1, "DOM.enable");
+  client_host.SendMessageAndWait(agent_host.get(), 2, "Overlay.enable");
+
+  auto doc_res = client_host.SendMessageAndWait(agent_host.get(), 3, "DOM.getDocument");
+  std::optional<int> root_node_id = doc_res.FindIntByDottedPath("result.root.nodeId");
+  ASSERT_TRUE(root_node_id.has_value());
+
+  auto query_res = client_host.SendMessageAndWait(agent_host.get(), 4, "DOM.querySelector", 
+    ::base::StringPrintf("{\"nodeId\":%d,\"selector\":\".icon\"}", *root_node_id));
+  std::optional<int> target_node_id = query_res.FindIntByDottedPath("result.nodeId");
+  ASSERT_TRUE(target_node_id.has_value());
+
+  std::string highlight_params = ::base::StringPrintf("{\"nodeId\":%d,\"highlightConfig\":{\"showInfo\":true,\"showStyles\":true,\"contentColor\":{\"r\":255,\"g\":0,\"b\":0,\"a\":0.5}}}", *target_node_id);
+  client_host.SendMessageAndWait(agent_host.get(), 5, "Overlay.highlightNode", highlight_params);
+  EXPECT_TRUE(ExecJs(root_frame_host, "new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));"));
+  agent_host->DetachClient(&client_host);
+}
+
 }  // namespace content

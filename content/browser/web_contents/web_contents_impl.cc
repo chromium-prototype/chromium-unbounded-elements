@@ -5966,7 +5966,7 @@ RenderWidgetHostView* WebContentsImpl::GetCreatedWidget(int process_id,
   LOG(INFO) << "GetCreatedWidget CALLED! process_id: " << process_id
             << " route_id: " << route_id
             << " pending size: " << pending_widgets_.size();
-  base::debug::StackTrace().Print();
+  
   OPTIONAL_TRACE_EVENT2("content", "WebContentsImpl::GetCreatedWidget",
                         "process_id", process_id, "route_id", route_id);
 
