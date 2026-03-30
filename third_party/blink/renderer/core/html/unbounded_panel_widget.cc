@@ -252,11 +252,6 @@ void UnboundedPanelWidget::UpdateLifecycle(WebLifecycleUpdate requested_update,
     web_local_frame_impl->PaintDevToolsOverlays(context);
   }
 
-  if (auto* web_local_frame_impl = WebLocalFrameImpl::FromFrame(
-          owner_element_->GetDocument().GetFrame())) {
-    web_local_frame_impl->PaintDevToolsOverlays(context);
-  }
-
   const PaintArtifact& artifact = paint_controller.CommitNewDisplayItems();
 
   gfx::Rect absolute_rect = panel_layout->AbsoluteBoundingBoxRect();

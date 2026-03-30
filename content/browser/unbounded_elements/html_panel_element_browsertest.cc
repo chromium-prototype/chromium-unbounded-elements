@@ -19,8 +19,11 @@
 #include "content/public/browser/render_widget_host_iterator.h"
 #include "content/public/browser/render_widget_host_observer.h"
 #include "content/public/browser/web_contents.h"
+#include "content/public/browser/devtools_agent_host.h"
+#include "content/public/browser/devtools_agent_host_client.h"
 #include "content/public/test/browser_test.h"
 #include "content/public/test/browser_test_utils.h"
+#include "content/public/browser/devtools_agent_host.h"
 #include "content/public/test/content_browser_test.h"
 #include "content/public/test/content_browser_test_utils.h"
 #include "content/shell/browser/shell.h"
@@ -1204,6 +1207,53 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest,
 
   EXPECT_TRUE(check_no_pointer())
       << "Cursor incorrectly reverted to kPointer during text selection drag!";
+}
+
+
+
+class TestDevToolsClientHost : public content::DevToolsAgentHostClient {
+ public:
+  TestDevToolsClientHost() = default;
+  ~TestDevToolsClientHost() override = default;
+  void DispatchProtocolMessage(content::DevToolsAgentHost* agent_host,
+                               base::span<const uint8_t> message) override {}
+  void AgentHostClosed(content::DevToolsAgentHost* agent_host) override {}
+};
+
+IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, DevToolsOverlayPaintNoCrash) {
+  ASSERT_TRUE(embedded_test_server()->Start());
+
+  GURL test_url(
+      "data:text/html,<!DOCTYPE html>"
+      "<body>"
+      "<panel open id='my_panel' style='position: fixed; inset: 0; margin: 0; "
+      "padding: 0; border: none; width: 100px; height: 100px; background: "
+      "white;'>"
+      "</panel>"
+      "</body>");
+
+  auto* contents = static_cast<WebContentsImpl*>(shell()->web_contents());
+  EXPECT_TRUE(NavigateToURL(shell(), test_url));
+  WaitForLoadStop(contents);
+
+  RenderFrameHostImpl* root_frame_host =
+      contents->GetPrimaryFrameTree().root()->current_frame_host();
+
+  // Attach DevTools
+  scoped_refptr<DevToolsAgentHost> agent_host = DevToolsAgentHost::GetOrCreateFor(contents);
+  TestDevToolsClientHost client_host;
+  agent_host->AttachClient(&client_host);
+
+  // Force DevTools Overlay to paint by turning on node selection
+  std::string enable_overlay = 
+    "{\"id\":1,\"method\":\"Overlay.setInspectMode\",\"params\":{\"mode\":\"searchForNode\",\"highlightConfig\":{\"showInfo\":true,\"showStyles\":true,\"contentColor\":{\"r\":255,\"g\":255,\"b\":255,\"a\":0.5}}}}";
+  agent_host->DispatchProtocolMessage(&client_host, base::as_byte_span(enable_overlay));
+
+  // Trigger lifecycle update
+  EXPECT_TRUE(ExecJs(root_frame_host, "document.getElementById('my_panel').style.background = 'blue';"));
+  auto eval_result = EvalJs(root_frame_host, "new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));");
+
+  agent_host->DetachClient(&client_host);
 }
 
 }  // namespace content
