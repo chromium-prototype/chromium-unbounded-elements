@@ -1,16 +1,45 @@
 Detected AI agent env. Prepending --quiet --batch=false --heartbeat_period=30s to improve latency and reduce context pollution. User-supplied flags take precedence.
 depot_tools/siso.py: ninja --quiet --batch=false --heartbeat_period=30s -C out/Release content_browsertests --metrics_labels type=developer,tool=siso,host_os=linux --enable_cloud_monitoring --enable_cloud_profiler --enable_cloud_trace --enable_cloud_logging --metrics_project=rbe-chrome-untrusted
-In module 'std' imported from ../../content/public/test/render_view_test.h:10:
-[1mgen/third_party/libc++/src/include/__memory/unique_ptr.h:756:30: [0m[0;1;31merror: [0m[1mallocating an object of abstract class type 'content::FakeRenderWidgetHost'[0m
-  756 |   return unique_ptr<_Tp>(new _Tp(std::forward<_Args>(__args)...));[0m
-      | [0;1;32m                             ^
-[0m[1m../../content/public/test/render_view_test.cc:873:15: [0m[0;1;36mnote: [0min instantiation of function template specialization 'std::make_unique<content::FakeRenderWidgetHost, 0>' requested here[0m
-  873 |   return std::make_unique<FakeRenderWidgetHost>();[0m
-      | [0;1;32m              ^
-[0m[1mgen/third_party/blink/public/mojom/page/widget.mojom.h:369:16: [0m[0;1;36mnote: [0munimplemented pure virtual method 'SetIsUnboundedPanel' in 'FakeRenderWidgetHost'[0m
-  369 |   virtual void SetIsUnboundedPanel() = 0;[0m
-      | [0;1;32m               ^
-[0m1 error generated.
+.[1m../../content/browser/unbounded_elements/html_panel_element_browsertest.cc:1243:18: [0m[0;1;31merror: [0m[1mno type named 'Dict' in 'base::Value'[0m
+ 1243 |   ::base::Value::Dict SendMessageAndWait(DevToolsAgentHost* agent_host, int id, const std::string& method, const std::string& params = "{}") {[0m
+      | [0;1;32m  ~~~~~~~~~~~~~~~^
+[0m[1m../../content/browser/unbounded_elements/html_panel_element_browsertest.cc:1261:18: [0m[0;1;31merror: [0m[1mno type named 'Dict' in 'base::Value'[0m
+ 1261 |   ::base::Value::Dict last_response_;[0m
+      | [0;1;32m  ~~~~~~~~~~~~~~~^
+[0m[1m../../content/browser/unbounded_elements/html_panel_element_browsertest.cc:1228:71: [0m[0;1;31merror: [0m[1mtoo few arguments to function call, expected at least 2, have 1[0m
+ 1228 |     std::optional<::base::Value> parsed = ::base::JSONReader::Read(msg);[0m
+      | [0;1;32m                                          ~~~~~~~~~~~~~~~~~~~~~~~~    ^
+[0m[1m../../base/json/json_reader.h:106:31: [0m[0;1;36mnote: [0m'Read' declared here[0m
+  106 |   static std::optional<Value> Read([0m
+      | [0;1;32m                              ^
+[0m  107 |       std::string_view json,[0m
+      | [0;1;32m      ~~~~~~~~~~~~~~~~~~~~~~
+[0m  108 |       int options,[0m
+      | [0;1;32m      ~~~~~~~~~~~~
+[0m  109 |       size_t max_depth = internal::kAbsoluteMaxDepth);[0m
+      | [0;1;32m      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[0m[1m../../content/browser/unbounded_elements/html_panel_element_browsertest.cc:1248:41: [0m[0;1;31merror: [0m[1mcannot initialize a parameter of type 'DevToolsAgentHostClient *' with an rvalue of type 'content::TestDevToolsClientHost *'[0m
+ 1248 |     agent_host->DispatchProtocolMessage(this, ::base::as_byte_span(msg));[0m
+      | [0;1;32m                                        ^~~~
+[0m[1m../../content/public/browser/devtools_agent_host.h:191:65: [0m[0;1;36mnote: [0mpassing argument to parameter 'client' here[0m
+  191 |   virtual void DispatchProtocolMessage(DevToolsAgentHostClient* client,[0m
+      | [0;1;32m                                                                ^
+[0m[1m../../content/browser/unbounded_elements/html_panel_element_browsertest.cc:1287:28: [0m[0;1;31merror: [0m[1mcannot initialize a parameter of type 'DevToolsAgentHostClient *' with an rvalue of type 'TestDevToolsClientHost *'[0m
+ 1287 |   agent_host->AttachClient(&client_host);[0m
+      | [0;1;32m                           ^~~~~~~~~~~~
+[0m[1m../../content/public/browser/devtools_agent_host.h:181:54: [0m[0;1;36mnote: [0mpassing argument to parameter 'client' here[0m
+  181 |   virtual bool AttachClient(DevToolsAgentHostClient* client) = 0;[0m
+      | [0;1;32m                                                     ^
+[0m[1m../../content/browser/unbounded_elements/html_panel_element_browsertest.cc:1325:28: [0m[0;1;31merror: [0m[1mcannot initialize a parameter of type 'DevToolsAgentHostClient *' with an rvalue of type 'TestDevToolsClientHost *'[0m
+ 1325 |   agent_host->DetachClient(&client_host);[0m
+      | [0;1;32m                           ^~~~~~~~~~~~
+[0m[1m../../content/public/browser/devtools_agent_host.h:185:54: [0m[0;1;36mnote: [0mpassing argument to parameter 'client' here[0m
+  185 |   virtual bool DetachClient(DevToolsAgentHostClient* client) = 0;[0m
+      | [0;1;32m                                                     ^
+[0m[1m../../content/browser/unbounded_elements/html_panel_element_browsertest.cc:1261:23: [0m[0;1;31merror: [0m[1mprivate field 'last_response_' is not used [-Werror,-Wunused-private-field][0m
+ 1261 |   ::base::Value::Dict last_response_;[0m
+      | [0;1;32m                      ^
+[0m7 errors generated.
 
-29.94s Build Failure: 601 done, 1 failed, 221 remaining - 20.08/s
- 1 steps failed: exit=1
+34.62s Build Failure: 1 done, 1 failed, 1 remaining - 0.03/s
+ cannot make progress due to previous 1 errors: exit=1

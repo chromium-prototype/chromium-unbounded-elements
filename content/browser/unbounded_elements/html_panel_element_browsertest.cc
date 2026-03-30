@@ -1,3 +1,8 @@
+#include "base/values.h"
+#include "base/json/json_reader.h"
+#include "base/json/json_writer.h"
+#include "base/strings/stringprintf.h"
+
 #include "base/run_loop.h"
 #include "base/threading/platform_thread.h"
 #include "ui/aura/client/transient_window_client.h"
@@ -78,13 +83,13 @@ class PanelCreateNewPopupWidgetInterceptor
     if (quit_called_) {
       return;
     }
-    run_loop_ = std::make_unique<base::RunLoop>();
+    run_loop_ = std::make_unique<::base::RunLoop>();
     run_loop_->Run();
   }
 
  private:
   bool quit_called_ = false;
-  std::unique_ptr<base::RunLoop> run_loop_;
+  std::unique_ptr<::base::RunLoop> run_loop_;
   [[maybe_unused]] mojo::test::ScopedSwapImplForTesting<
       blink::mojom::LocalFrameHost> swapped_impl_;
 };
@@ -160,7 +165,7 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, RenderWidgetColorIsBlue) {
   SkColor color = SK_ColorTRANSPARENT;
   int retry_count = 0;
 
-  base::RunLoop main_run_loop;
+  ::base::RunLoop main_run_loop;
 
   auto copy_callback = [&](const content::CopyFromSurfaceResult& result,
                            auto& self) -> void {
@@ -313,7 +318,7 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, PanelTextVisibleWithInput) {
     if (has_green && has_blue) {
       break;
     }
-    base::RunLoop copy_loop;
+    ::base::RunLoop copy_loop;
     popup_view->CopyFromSurface(
         gfx::Rect(), gfx::Size(), base::TimeDelta(),
         base::BindOnce(
@@ -343,7 +348,7 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, PanelTextVisibleWithInput) {
       break;
     }
     retries++;
-    base::RunLoop wait_loop;
+    ::base::RunLoop wait_loop;
     base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(
         FROM_HERE, wait_loop.QuitClosure(), base::Milliseconds(50));
     wait_loop.Run();
@@ -400,7 +405,7 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, WindowBoundsSync) {
       blink::mojom::RecordContentToVisibleTimeRequestPtr());
 
   // Wait a bit for layout / mojo
-  base::RunLoop initial_run_loop;
+  ::base::RunLoop initial_run_loop;
   base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(
       FROM_HERE, initial_run_loop.QuitClosure(), base::Milliseconds(100));
   initial_run_loop.Run();
@@ -427,7 +432,7 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, WindowBoundsSync) {
   while ((popup_view->GetViewBounds().size() != gfx::Size(300, 150) ||
           popup_view->GetViewBounds().origin() != expected_origin) &&
          retries < 50) {
-    base::RunLoop run_loop;
+    ::base::RunLoop run_loop;
     base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(
         FROM_HERE, run_loop.QuitClosure(), base::Milliseconds(50));
     run_loop.Run();
@@ -491,7 +496,7 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, InputEventRouting) {
       blink::mojom::RecordContentToVisibleTimeRequestPtr());
 
   // Wait a bit for layout / mojo
-  base::RunLoop initial_run_loop;
+  ::base::RunLoop initial_run_loop;
   base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(
       FROM_HERE, initial_run_loop.QuitClosure(), base::Milliseconds(100));
   initial_run_loop.Run();
@@ -678,7 +683,7 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, OutsideClickEvent) {
 
   // Yield for Mojo run loop
   {
-    base::RunLoop run_loop;
+    ::base::RunLoop run_loop;
     base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(
         FROM_HERE, run_loop.QuitClosure(), base::Milliseconds(100));
     run_loop.Run();
@@ -691,7 +696,7 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, OutsideClickEvent) {
     if (clicks > 0) {
       break;
     }
-    base::RunLoop run_loop;
+    ::base::RunLoop run_loop;
     base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(
         FROM_HERE, run_loop.QuitClosure(), base::Milliseconds(50));
     run_loop.Run();
@@ -757,7 +762,7 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, DismissOnBlurBehavior) {
 
   // Yield for Mojo run loop
   {
-    base::RunLoop run_loop;
+    ::base::RunLoop run_loop;
     base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(
         FROM_HERE, run_loop.QuitClosure(), base::Milliseconds(200));
     run_loop.Run();
@@ -773,7 +778,7 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, DismissOnBlurBehavior) {
     if (!is_open) {
       break;
     }
-    base::RunLoop run_loop;
+    ::base::RunLoop run_loop;
     base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(
         FROM_HERE, run_loop.QuitClosure(), base::Milliseconds(50));
     run_loop.Run();
@@ -806,7 +811,7 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, MouseCaptureStateSync) {
   RenderProcessHost* process = root_frame_host->GetProcess();
   RenderWidgetHostImpl* popup_widget_host = nullptr;
   while (!popup_widget_host) {
-    base::RunLoop run_loop;
+    ::base::RunLoop run_loop;
     base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(
         FROM_HERE, run_loop.QuitClosure(), base::Milliseconds(50));
     run_loop.Run();
@@ -825,7 +830,7 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, MouseCaptureStateSync) {
 
   RenderWidgetHostView* popup_view = nullptr;
   while (!popup_view || !popup_view->GetNativeView()) {
-    base::RunLoop run_loop;
+    ::base::RunLoop run_loop;
     base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(
         FROM_HERE, run_loop.QuitClosure(), base::Milliseconds(50));
     run_loop.Run();
@@ -843,11 +848,11 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, MouseCaptureStateSync) {
   // Verify dynamic update removed capture
   // We need to wait for IPC to arrive (RenderWidgetHostImpl::SetPopupCapture is
   // synchronous locally once it arrives). We can just use
-  // base::RunLoop().RunUntilIdle() to flush the Mojo pipe since both are on the
+  // ::base::RunLoop().RunUntilIdle() to flush the Mojo pipe since both are on the
   // UI thread.
   auto wait_capture = [&](bool expected) {
     while (popup_view->GetNativeView()->HasCapture() != expected) {
-      base::RunLoop().RunUntilIdle();
+      ::base::RunLoop().RunUntilIdle();
       base::PlatformThread::Sleep(base::Milliseconds(10));
     }
   };
@@ -886,7 +891,7 @@ class WidgetDestroyedObserver : public RenderWidgetHostObserver {
     if (destroyed_) {
       return;
     }
-    run_loop_ = std::make_unique<base::RunLoop>();
+    run_loop_ = std::make_unique<::base::RunLoop>();
     run_loop_->Run();
   }
 
@@ -894,7 +899,7 @@ class WidgetDestroyedObserver : public RenderWidgetHostObserver {
 
  private:
   raw_ptr<RenderWidgetHost> host_;
-  std::unique_ptr<base::RunLoop> run_loop_;
+  std::unique_ptr<::base::RunLoop> run_loop_;
 };
 
 IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, VisibilityStateHidesPanel) {
@@ -933,7 +938,7 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, VisibilityStateHidesPanel) {
 
   RenderWidgetHostImpl* popup_widget_host = nullptr;
   while (!(popup_widget_host = get_popup_widget())) {
-    base::RunLoop run_loop;
+    ::base::RunLoop run_loop;
     base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(
         FROM_HERE, run_loop.QuitClosure(), base::Milliseconds(50));
     run_loop.Run();
@@ -1070,7 +1075,7 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, WindowDragSync) {
       browser_bounds,
       display::Screen::Get()->GetDisplayNearestWindow(browser_window));
 
-  base::RunLoop settle_loop;
+  ::base::RunLoop settle_loop;
   base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(
       FROM_HERE, settle_loop.QuitClosure(), base::Milliseconds(300));
   settle_loop.Run();
@@ -1082,7 +1087,7 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, WindowDragSync) {
       browser_bounds,
       display::Screen::Get()->GetDisplayNearestWindow(browser_window));
 
-  base::RunLoop run_loop;
+  ::base::RunLoop run_loop;
   base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(
       FROM_HERE, run_loop.QuitClosure(), base::Milliseconds(300));
   run_loop.Run();
@@ -1168,7 +1173,7 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest,
               ui::mojom::CursorType::kIBeam) {
         return true;
       }
-      base::RunLoop run_loop;
+      ::base::RunLoop run_loop;
       base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(
           FROM_HERE, run_loop.QuitClosure(), base::Milliseconds(50));
       run_loop.Run();
@@ -1197,7 +1202,7 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest,
               ui::mojom::CursorType::kPointer) {
         return false;
       }
-      base::RunLoop run_loop;
+      ::base::RunLoop run_loop;
       base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(
           FROM_HERE, run_loop.QuitClosure(), base::Milliseconds(50));
       run_loop.Run();
@@ -1211,13 +1216,50 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest,
 
 
 
+
 class TestDevToolsClientHost : public content::DevToolsAgentHostClient {
  public:
   TestDevToolsClientHost() = default;
   ~TestDevToolsClientHost() override = default;
-  void DispatchProtocolMessage(content::DevToolsAgentHost* agent_host,
-                               base::span<const uint8_t> message) override {}
-  void AgentHostClosed(content::DevToolsAgentHost* agent_host) override {}
+
+  void DispatchProtocolMessage(DevToolsAgentHost* agent_host,
+                               ::base::span<const uint8_t> message) override {
+    std::string msg(reinterpret_cast<const char*>(message.data()), message.size());
+    std::optional<::base::Value> parsed = ::base::JSONReader::Read(msg, 0);
+    if (!parsed || !parsed->is_dict()) return;
+
+    if (std::optional<int> id = parsed->GetDict().FindInt("id")) {
+      if (*id == wait_for_id_) {
+        last_response_ = parsed->GetDict().Clone();
+        if (run_loop_) {
+          run_loop_->Quit();
+        }
+      }
+    }
+  }
+  
+  void AgentHostClosed(DevToolsAgentHost* agent_host) override {}
+
+  ::base::DictValue SendMessageAndWait(DevToolsAgentHost* agent_host, int id, const std::string& method, const std::string& params = "{}") {
+    std::string msg = ::base::StringPrintf("{\"id\":%d,\"method\":\"%s\",\"params\":%s}", id, method.c_str(), params.c_str());
+    wait_for_id_ = id;
+    last_response_.clear();
+    
+    agent_host->DispatchProtocolMessage(this, ::base::as_byte_span(msg));
+
+    if (last_response_.empty()) {
+        ::base::RunLoop run_loop;
+        run_loop_ = &run_loop;
+        run_loop.Run();
+        run_loop_ = nullptr;
+    }
+    return std::move(last_response_);
+  }
+
+ private:
+  int wait_for_id_ = -1;
+  ::base::DictValue last_response_;
+  raw_ptr<::base::RunLoop> run_loop_ = nullptr;
 };
 
 IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, DevToolsOverlayPaintNoCrash) {
@@ -1244,15 +1286,42 @@ IN_PROC_BROWSER_TEST_F(HTMLPanelElementBrowserTest, DevToolsOverlayPaintNoCrash)
   TestDevToolsClientHost client_host;
   agent_host->AttachClient(&client_host);
 
-  // Force DevTools Overlay to paint by turning on node selection
-  std::string enable_overlay = 
-    "{\"id\":1,\"method\":\"Overlay.setInspectMode\",\"params\":{\"mode\":\"searchForNode\",\"highlightConfig\":{\"showInfo\":true,\"showStyles\":true,\"contentColor\":{\"r\":255,\"g\":255,\"b\":255,\"a\":0.5}}}}";
-  agent_host->DispatchProtocolMessage(&client_host, base::as_byte_span(enable_overlay));
+  // Enable domains
+  client_host.SendMessageAndWait(agent_host.get(), 1, "DOM.enable");
+  client_host.SendMessageAndWait(agent_host.get(), 2, "Overlay.enable");
 
-  // Trigger lifecycle update
-  EXPECT_TRUE(ExecJs(root_frame_host, "document.getElementById('my_panel').style.background = 'blue';"));
-  auto eval_result = EvalJs(root_frame_host, "new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));");
+  // Get the document root node ID
+  auto doc_res = client_host.SendMessageAndWait(agent_host.get(), 3, "DOM.getDocument");
+  std::optional<int> root_node_id = doc_res.FindIntByDottedPath("result.root.nodeId");
+  ASSERT_TRUE(root_node_id.has_value());
 
+  // Query for the panel element
+  auto query_res = client_host.SendMessageAndWait(agent_host.get(), 4, "DOM.querySelector", 
+    ::base::StringPrintf("{\"nodeId\":%d,\"selector\":\"#my_panel\"}", *root_node_id));
+  std::optional<int> target_node_id = query_res.FindIntByDottedPath("result.nodeId");
+  ASSERT_TRUE(target_node_id.has_value());
+
+  // Queue a ResizeObserver to mutate the DOM during lifecycle updates
+  EXPECT_TRUE(ExecJs(root_frame_host, 
+      "window.testObs = new ResizeObserver(() => {\n"
+      "  document.getElementById('my_panel').style.background = 'red';\n"
+      "});\n"
+      "window.testObs.observe(document.getElementById('my_panel'));\n"
+  ));
+
+  // Explicitly ask DevTools to highlight the target node.
+  // This reliably triggers `GetNodeInspectorHighlightAsJson` and `ComputedNameNoLifecycleUpdate` 
+  // without relying on pointer hit-testing.
+  std::string highlight_params = ::base::StringPrintf("{\"nodeId\":%d,\"highlightConfig\":{\"showInfo\":true,\"showStyles\":true,\"contentColor\":{\"r\":255,\"g\":0,\"b\":0,\"a\":0.5}}}", *target_node_id);
+  client_host.SendMessageAndWait(agent_host.get(), 5, "Overlay.highlightNode", highlight_params);
+
+  // Mutate width to formally wake up ResizeObserver inside UnboundedPanelWidget::UpdateLifecycle's pre-paint layout phase
+  EXPECT_TRUE(ExecJs(root_frame_host, "document.getElementById('my_panel').style.width = '101px';"));
+  
+  // Wait to ensure everything renders, pumping the lifecycle that draws the overlay.
+  EXPECT_TRUE(ExecJs(root_frame_host, "new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));"));
+
+  // Check that the crash didn't happen (this line would not be reached if it crashed).
   agent_host->DetachClient(&client_host);
 }
 

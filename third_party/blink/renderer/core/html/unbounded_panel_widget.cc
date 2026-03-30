@@ -252,7 +252,8 @@ void UnboundedPanelWidget::UpdateLifecycle(WebLifecycleUpdate requested_update,
           owner_element_->GetDocument().GetFrame())) {
     v8::Isolate* isolate =
         owner_element_->GetDocument().GetExecutionContext()->GetIsolate();
-    v8::MicrotaskQueue* microtask_queue = isolate->GetCurrentContext().IsEmpty() ? nullptr : isolate->GetCurrentContext()->GetMicrotaskQueue();
+    v8::MicrotaskQueue* microtask_queue = 
+        owner_element_->GetDocument().GetExecutionContext()->GetMicrotaskQueue();
     std::optional<v8::MicrotasksScope> microtasks_scope;
     if (microtask_queue) {
       microtasks_scope.emplace(isolate, microtask_queue, v8::MicrotasksScope::kDoNotRunMicrotasks);
