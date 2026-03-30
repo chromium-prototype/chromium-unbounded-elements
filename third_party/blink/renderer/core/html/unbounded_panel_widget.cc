@@ -250,15 +250,6 @@ void UnboundedPanelWidget::UpdateLifecycle(WebLifecycleUpdate requested_update,
 
   if (auto* web_local_frame_impl = WebLocalFrameImpl::FromFrame(
           owner_element_->GetDocument().GetFrame())) {
-    v8::Isolate* isolate =
-        owner_element_->GetDocument().GetExecutionContext()->GetIsolate();
-    v8::MicrotaskQueue* microtask_queue = 
-        owner_element_->GetDocument().GetExecutionContext()->GetMicrotaskQueue();
-    std::optional<v8::MicrotasksScope> microtasks_scope;
-    if (microtask_queue) {
-      microtasks_scope.emplace(isolate, microtask_queue, v8::MicrotasksScope::kDoNotRunMicrotasks);
-    }
-    
     if (owner_element_->GetDocument().Lifecycle().GetState() >= DocumentLifecycle::kPrePaintClean &&
         !owner_element_->GetDocument().NeedsLayoutTreeUpdate()) {
       web_local_frame_impl->PaintDevToolsOverlays(context);

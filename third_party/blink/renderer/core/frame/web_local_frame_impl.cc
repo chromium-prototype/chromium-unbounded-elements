@@ -96,6 +96,7 @@
 #include <utility>
 #include <vector>
 
+#include "v8/include/v8.h"
 #include "base/check_is_test.h"
 #include "base/compiler_specific.h"
 #include "base/notreached.h"
@@ -2574,8 +2575,17 @@ void WebLocalFrameImpl::UpdateDevToolsOverlaysPrePaint() {
 }
 
 void WebLocalFrameImpl::PaintDevToolsOverlays(GraphicsContext& context) {
-  if (dev_tools_agent_)
+  if (dev_tools_agent_) {
+    v8::Isolate* isolate =
+        GetFrame()->GetDocument()->GetExecutionContext()->GetIsolate();
+    v8::MicrotaskQueue* microtask_queue =
+        GetFrame()->GetDocument()->GetExecutionContext()->GetMicrotaskQueue();
+    std::optional<v8::MicrotasksScope> microtasks_scope;
+    if (microtask_queue) {
+      microtasks_scope.emplace(isolate, microtask_queue, v8::MicrotasksScope::kDoNotRunMicrotasks);
+    }
     dev_tools_agent_->PaintOverlays(context);
+  }
 }
 
 void WebLocalFrameImpl::CreateFrameView() {

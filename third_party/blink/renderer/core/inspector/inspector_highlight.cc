@@ -431,7 +431,7 @@ std::unique_ptr<protocol::DictionaryValue> BuildElementInfo(Element* element) {
   element_info->setString("nodeHeight", String::Number(bounding_box.height()));
 
   element_info->setBoolean("isKeyboardFocusable",
-                           element->IsKeyboardFocusableSlow());
+                           element->IsKeyboardFocusableSlow(Element::UpdateBehavior::kNoneForAccessibility));
   element_info->setString("accessibleName",
                           element->ComputedNameNoLifecycleUpdate());
   element_info->setString("accessibleRole",
