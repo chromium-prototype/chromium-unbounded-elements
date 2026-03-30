@@ -258,7 +258,10 @@ void UnboundedPanelWidget::UpdateLifecycle(WebLifecycleUpdate requested_update,
     if (microtask_queue) {
       microtasks_scope.emplace(isolate, microtask_queue, v8::MicrotasksScope::kDoNotRunMicrotasks);
     }
-    web_local_frame_impl->PaintDevToolsOverlays(context);
+    
+if (owner_element_->GetDocument().Lifecycle().GetState() >= DocumentLifecycle::kPrePaintClean) {
+      web_local_frame_impl->PaintDevToolsOverlays(context);
+    }
   }
 
   const PaintArtifact& artifact = paint_controller.CommitNewDisplayItems();
